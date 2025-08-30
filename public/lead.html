@@ -24,9 +24,7 @@
 
     form{ display:grid; gap:12px }
     label{ font-weight:600; font-size:14px }
-    input, select, textarea, button{
-      font-family:inherit; font-size:16px
-    }
+    input, select, textarea, button{ font-family:inherit; font-size:16px }
     input, select, textarea{
       width:100%; padding:12px 14px; border:1px solid var(--brd); border-radius:12px; background:#fff;
     }
@@ -40,7 +38,7 @@
     button{
       border:0; padding:12px 18px; border-radius:12px; cursor:pointer;
       background:#2563eb; color:#fff; font-weight:600;
-      box-shadow:0 8px 16px rgba(37,99,235,.2);
+      box-shadow:0 8px 16px rgba(37,99,235,.2); transition:.2s;
     }
     button[disabled]{ opacity:.6; cursor:not-allowed; box-shadow:none }
     #msg{ font-size:14px; color:var(--muted) }
@@ -70,7 +68,7 @@
             <label for="phone">טלפון *</label>
             <input id="phone" name="phone" type="tel" inputmode="tel"
                    placeholder="05XXXXXXXX"
-                   pattern="^0\d{8,9}$"
+                   pattern="^0\\d{8,9}$"
                    title="מספר ישראלי: מתחיל ב־0 ואורך 9–10 ספרות"
                    required />
           </div>
@@ -103,7 +101,7 @@
   </div>
 
   <script>
-  // כתובת ה-Web App שלך ב-Apps Script
+  // ===== קנפג פה את כתובת ה-Web App וה-origin =====
   const ENDPOINT = 'https://script.google.com/macros/s/AKfycbxRiJ_uMNpIJru-nNClAi787sA07hQSu7TX4cQEAm3_w3-dO2Hmp39ISxh81SqudA/exec';
   const ORIGIN   = location.origin;
 
@@ -114,11 +112,11 @@
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
 
-    // ולידציה בסיסית בצד לקוח
+    // ולידציה של HTML
     if (!form.reportValidity()) return;
 
     btn.disabled = true;
-    const prev = btn.textContent;
+    const prevTxt = btn.textContent;
     btn.textContent = 'שולח...';
     msg.className = ''; msg.textContent = '';
 
@@ -126,9 +124,10 @@
     const url  = ENDPOINT + '?origin=' + encodeURIComponent(ORIGIN);
 
     try {
+      // שולחים כ-text/plain כדי למנוע בקשת preflight (OPTIONS)
       const res  = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type':'application/json' },
+        headers: { 'Content-Type':'text/plain' },
         body: JSON.stringify(data)
       });
 
@@ -150,7 +149,7 @@
       msg.textContent = 'שגיאת רשת. נסה שוב.';
     } finally {
       btn.disabled = false;
-      btn.textContent = prev;
+      btn.textContent = prevTxt;
     }
   });
   </script>
