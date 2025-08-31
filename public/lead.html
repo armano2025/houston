@@ -32,6 +32,7 @@
     .row{ display:grid; gap:12px; grid-template-columns:1fr }
     @media (min-width:560px){ .row{ grid-template-columns:1fr 1fr } }
 
+    /* Honeypot – לא להסיר */
     .hp{ position:absolute !important; left:-9999px !important; opacity:0 !important; width:1px; height:1px }
 
     .actions{ display:flex; gap:10px; align-items:center; margin-top:4px }
@@ -55,20 +56,20 @@
         <div class="row">
           <div>
             <label for="firstName">שם פרטי *</label>
-            <input id="firstName" name="firstName" placeholder="לדוגמה: נועה" required />
+            <input id="firstName" name="firstName" placeholder="לדוגמה: נועה" autocomplete="given-name" required autofocus />
           </div>
           <div>
             <label for="lastName">שם משפחה</label>
-            <input id="lastName" name="lastName" placeholder="אופציונלי" />
+            <input id="lastName" name="lastName" placeholder="אופציונלי" autocomplete="family-name" />
           </div>
         </div>
 
         <div class="row">
           <div>
             <label for="phone">טלפון *</label>
-            <input id="phone" name="phone" type="tel" inputmode="tel"
+            <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel"
                    placeholder="05XXXXXXXX"
-                   pattern="^0\\d{8,9}$"
+                   pattern="^0[0-9]{8,9}$"
                    title="מספר ישראלי: מתחיל ב־0 ואורך 9–10 ספרות"
                    required />
           </div>
@@ -93,8 +94,8 @@
         <input class="hp" name="website" tabindex="-1" autocomplete="off" />
 
         <div class="actions">
-          <button id="submitBtn" type="submit">שלח</button>
-          <div id="msg"></div>
+          <button id="submitBtn" type="submit" aria-label="שליחת הטופס">שלח</button>
+          <div id="msg" role="status" aria-live="polite"></div>
         </div>
       </form>
     </div>
@@ -108,11 +109,22 @@
   const form = document.getElementById('leadForm');
   const btn  = document.getElementById('submitBtn');
   const msg  = document.getElementById('msg');
+  const phoneInput = document.getElementById('phone');
+
+  // ניקוי מספר: משאיר רק ספרות בזמן ההקלדה
+  phoneInput.addEventListener('input', (e) => {
+    e.target.value = e.target.value.replace(/[^\d]/g, '');
+  });
 
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
 
-    // ולידציה של HTML
+    // טרימינג והשלמות קטנות לפני ולידציה
+    ['firstName','lastName','notes'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && typeof el.value === 'string') el.value = el.value.trim();
+    });
+
     if (!form.reportValidity()) return;
 
     btn.disabled = true;
@@ -124,7 +136,7 @@
     const url  = ENDPOINT + '?origin=' + encodeURIComponent(ORIGIN);
 
     try {
-      // שולחים כ-text/plain כדי למנוע בקשת preflight (OPTIONS)
+      // שולחים כ-text/plain כדי למנוע preflight (OPTIONS)
       const res  = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type':'text/plain' },
@@ -135,12 +147,12 @@
       let j = {};
       try { j = JSON.parse(text); } catch(_) {}
 
-      if (j.ok) {
+      if (j && j.ok) {
         msg.className = 'ok';
         msg.textContent = 'נקלט בהצלחה. מספר תיק: ' + j.caseId;
         form.reset();
       } else {
-        const err = j.error || (res.ok ? 'unknown' : ('HTTP ' + res.status));
+        const err = (j && j.error) || (res.ok ? 'unknown' : ('HTTP ' + res.status));
         msg.className = 'err';
         msg.textContent = 'שגיאה: ' + err;
       }
