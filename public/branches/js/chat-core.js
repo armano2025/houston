@@ -1,4 +1,4 @@
-// /branches/js/chat-core.js
+// /branches/js/chat-core.js — Core chat UI + flow helpers (fix subject step)
 (() => {
   const cfg = window.APP_CONFIG || {};
 
@@ -11,7 +11,7 @@
   const State = {
     history: [],
     data: {},
-    token: 0,          // ביטול ריצה אסינכרונית קודמת
+    token: 0,
     autoScroll: true,
   };
   const last = () => State.history[State.history.length - 1];
@@ -21,7 +21,7 @@
       State.history.pop();
       updateBack();
       State.token++;
-      last()();        // מריץ את המסך הקודם מחדש
+      last()();
     }
   };
   function updateBack(){ if (backBtn) backBtn.disabled = State.history.length <= 1; }
@@ -31,7 +31,6 @@
   function clear(){ State.token++; if (area) area.innerHTML=''; }
   function autoscroll(){ if (area) area.scrollTo({ top: area.scrollHeight, behavior: 'smooth' }); }
   function setStatus(msg){ if (status) status.textContent = msg; }
-
   function bubble(html, who='bot'){
     const el = document.createElement('div');
     el.className = `bubble ${who}`;
@@ -40,7 +39,6 @@
     autoscroll();
     return el;
   }
-
   function typing(on=true){
     let el = document.getElementById('typingRow');
     if (on){
@@ -95,12 +93,13 @@
       </div>`;
   }
 
-  function chipRow({label, name, options=[], multi=false}){
-    const chips = options.map((t,i)=>`<button type="button" class="chip" data-name="${name}" data-value="${t}" aria-pressed="false">${t}</button>`).join('');
+  function chipRow({label, name, options=[], multi=false, id}) {
+    const chips = options.map((t)=>`<button type="button" class="chip" data-name="${name}" data-value="${t}" aria-pressed="false">${t}</button>`).join('');
+    const attrId = id ? ` id="${id}"` : '';
     return `
       <div class="field">
         <label>${label}</label>
-        <div class="chips" data-multi="${multi?'1':'0'}">${chips}</div>
+        <div class="chips"${attrId} data-multi="${multi?'1':'0'}">${chips}</div>
       </div>`;
   }
 
@@ -134,9 +133,10 @@
     return data;
   }
 
-  // ===== Chat — composable steps =====
+  // ===== Chat steps =====
   const Chat = {
     clear, bubble, typing, setStatus, push, goBack, last, Val,
+
     async askContact(init={}){
       const token = ++State.token;
       bubble('נתחיל מפרטי קשר 👨‍🚀');
@@ -163,52 +163,45 @@
         }
         if (token !== State.token) return;
         State.data = { ...State.data, ...v };
-        Chat.setStatus('פרטי קשר התקבלו ✔️');
-        Chat.typing(true);
-        setTimeout(()=>Chat.typing(false), 400);
-        runNext();
-      }, { once:false });
+        setStatus('פרטי קשר התקבלו');
+        push(() => { clear(); Chat.askContact(State.data); });
+        typing(true);
+        setTimeout(()=>{ typing(false); clear(); Chat.selectSubject(); }, 250);
+      }, { once:true });
 
-      const cancel = document.getElementById('cancelBtn');
-      cancel.onclick = ()=> { location.href='../../index.html'; };
-
-      function runNext(){
-        if (typeof Chat._afterContact === 'function') Chat._afterContact();
-      }
-
-      // מאפשר Back לחזור לכאן
-      push(() => { clear(); Chat.askContact(State.data); });
+      document.getElementById('cancelBtn').onclick = ()=> { location.href='../../index.html'; };
     },
 
     async selectSubject(){
       const token = ++State.token;
       bubble('באיזה מקצוע תרצו תגבור? 👨‍🚀');
       const html = `
-        <div class="bubble user">
-          ${chipRow({label:'בחרו מקצוע', name:'subject', options:['מתמטיקה','אנגלית','פיזיקה','שפה','הוראה מתקנת'], multi:false})}
+        <div class="bubble user" id="subjectStep">
+          ${chipRow({label:'בחרו מקצוע', name:'subject', options:['מתמטיקה','אנגלית','פיזיקה','שפה','הוראה מתקנת'], multi:false, id:'chips_subject'})}
           <div class="row" style="margin-top:8px">
-            <button class="btn primary" id="next">המשך</button>
+            <button class="btn primary" id="nextSubject" disabled>המשך</button>
           </div>
         </div>`;
       area.insertAdjacentHTML('beforeend', html);
       autoscroll();
 
-      const chips = area.querySelector('.chips');
-      onChips(chips);
+      const chips = document.getElementById('chips_subject');
+      const nextBtn = document.getElementById('nextSubject');
+      let picked = '';
 
-      document.getElementById('next').onclick = ()=>{
-        const picked = getChipValues(chips)[0];
+      onChips(chips, (vals)=>{
+        picked = vals[0] || '';
+        nextBtn.disabled = !picked;
+      });
+
+      nextBtn.onclick = ()=>{
         if (!picked){ setStatus('אנא בחרו מקצוע'); return; }
         if (token !== State.token) return;
         State.data.subject = picked;
         push(() => { clear(); Chat.selectSubject(); });
-        runNext();
+        typing(true);
+        setTimeout(()=>{ typing(false); clear(); Chat.selectGrade(); }, 200);
       };
-
-      function runNext(){
-        Chat.typing(true);
-        setTimeout(()=>{ Chat.typing(false); Chat.selectGrade(); }, 300);
-      }
     },
 
     async selectGrade(){
@@ -216,28 +209,27 @@
       const grades = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ז׳','ח׳','ט׳','י׳','י״א','י״ב','סטודנט'];
       bubble('באיזו כיתה? 👨‍🚀');
       const html = `
-        <div class="bubble user">
+        <div class="bubble user" id="gradeStep">
           ${selectRow({label:'כיתה', name:'grade', options:grades, required:true})}
           <div class="row" style="margin-top:8px">
-            <button class="btn primary" id="next">המשך</button>
+            <button class="btn primary" id="nextGrade">המשך</button>
           </div>
         </div>`;
       area.insertAdjacentHTML('beforeend', html);
       autoscroll();
 
-      document.getElementById('next').onclick = ()=>{
+      document.getElementById('nextGrade').onclick = ()=>{
         const grade = (document.getElementById('f_grade')||{}).value || '';
         if (!Val.nonEmpty(grade)){ setStatus('אנא בחרו כיתה'); return; }
         if (token !== State.token) return;
         State.data.grade = grade;
         push(() => { clear(); Chat.selectGrade(); });
-        if (['י׳','י״א','י״ב'].includes(grade)) {
-          Chat.typing(true);
-          setTimeout(()=>{ Chat.typing(false); Chat.selectUnits(); }, 250);
-        } else {
-          Chat.typing(true);
-          setTimeout(()=>{ Chat.typing(false); Chat.selectRate(); }, 250);
-        }
+        typing(true);
+        setTimeout(()=>{
+          typing(false);
+          if (['י׳','י״א','י״ב'].includes(grade)) { clear(); Chat.selectUnits(); }
+          else { clear(); Chat.selectRate(); }
+        }, 200);
       };
     },
 
@@ -245,26 +237,27 @@
       const token = ++State.token;
       bubble('כמה יחידות? 👨‍🚀');
       const html = `
-        <div class="bubble user">
-          ${chipRow({label:'יחידות בגרות', name:'units', options:['3','4','5'], multi:false})}
+        <div class="bubble user" id="unitsStep">
+          ${chipRow({label:'יחידות בגרות', name:'units', options:['3','4','5'], multi:false, id:'chips_units'})}
           <div class="row" style="margin-top:8px">
-            <button class="btn primary" id="next">המשך</button>
+            <button class="btn primary" id="nextUnits" disabled>המשך</button>
           </div>
         </div>`;
       area.insertAdjacentHTML('beforeend', html);
       autoscroll();
 
-      const chips = area.querySelector('.chips');
-      onChips(chips);
+      const chips = document.getElementById('chips_units');
+      const nextBtn = document.getElementById('nextUnits');
+      let picked = '';
+      onChips(chips, (vals)=>{ picked = vals[0] || ''; nextBtn.disabled = !picked; });
 
-      document.getElementById('next').onclick = ()=>{
-        const units = getChipValues(chips)[0];
-        if (!units){ setStatus('אנא בחרו מספר יחידות'); return; }
+      nextBtn.onclick = ()=>{
+        if (!picked){ setStatus('אנא בחרו מספר יחידות'); return; }
         if (token !== State.token) return;
-        State.data.units = units;
+        State.data.units = picked;
         push(() => { clear(); Chat.selectUnits(); });
-        Chat.typing(true);
-        setTimeout(()=>{ Chat.typing(false); Chat.selectRate(); }, 250);
+        typing(true);
+        setTimeout(()=>{ typing(false); clear(); Chat.selectRate(); }, 200);
       };
     },
 
@@ -272,26 +265,27 @@
       const token = ++State.token;
       bubble('נא לבחור תעריף תגבור 👨‍🚀');
       const html = `
-        <div class="bubble user">
-          ${chipRow({label:'תעריף', name:'rate', options:['70₪','90₪','160₪'], multi:false})}
+        <div class="bubble user" id="rateStep">
+          ${chipRow({label:'תעריף', name:'rate', options:['70₪','90₪','160₪'], multi:false, id:'chips_rate'})}
           <div class="row" style="margin-top:8px">
-            <button class="btn primary" id="next">המשך</button>
+            <button class="btn primary" id="nextRate" disabled>המשך</button>
           </div>
         </div>`;
       area.insertAdjacentHTML('beforeend', html);
       autoscroll();
 
-      const chips = area.querySelector('.chips');
-      onChips(chips);
+      const chips = document.getElementById('chips_rate');
+      const nextBtn = document.getElementById('nextRate');
+      let picked = '';
+      onChips(chips, (vals)=>{ picked = vals[0] || ''; nextBtn.disabled = !picked; });
 
-      document.getElementById('next').onclick = ()=>{
-        const rate = getChipValues(chips)[0];
-        if (!rate){ setStatus('אנא בחרו תעריף'); return; }
+      nextBtn.onclick = ()=>{
+        if (!picked){ setStatus('אנא בחרו תעריף'); return; }
         if (token !== State.token) return;
-        State.data.rate = rate;
+        State.data.rate = picked;
         push(() => { clear(); Chat.selectRate(); });
-        Chat.typing(true);
-        setTimeout(()=>{ Chat.typing(false); Chat.askSlots(); }, 250);
+        typing(true);
+        setTimeout(()=>{ typing(false); clear(); Chat.askSlots(); }, 200);
       };
     },
 
@@ -299,81 +293,77 @@
       const token = ++State.token;
       State.data.slots = State.data.slots || [];
       bubble('בחרו תאריכים וטווחי שעות מועדפים 👨‍🚀 (ניתן להוסיף כמה)');
-      render();
 
-      push(() => { clear(); Chat.askSlots(); });
-
-      function render(){
-        const html = `
-          <div class="bubble user" id="slotsBox">
-            <form id="slotForm" class="field">
-              ${fieldRow({label:'תאריך', name:'date', type:'date', required:true})}
-              <div class="row">
-                ${fieldRow({label:'משעה', name:'from', type:'time', required:true})}
-                ${fieldRow({label:'עד שעה', name:'to', type:'time', required:true})}
-              </div>
-              <div class="row">
-                <button class="btn" type="button" id="addSlot">הוסף מועד</button>
-                <button class="btn ghost" type="button" id="clearAll">נקה הכל</button>
-              </div>
-            </form>
-
-            <div class="field">
-              <label>מועדים שנבחרו</label>
-              <div class="slot-preview" id="slotList" style="display:flex; gap:6px; flex-wrap:wrap"></div>
-              <div class="meta">יש לבחור לפחות מועד אחד כדי להתקדם</div>
+      const html = `
+        <div class="bubble user" id="slotsStep">
+          <form id="slotForm" class="field">
+            ${fieldRow({label:'תאריך', name:'date', type:'date', required:true})}
+            <div class="row">
+              ${fieldRow({label:'משעה', name:'from', type:'time', required:true})}
+              ${fieldRow({label:'עד שעה', name:'to', type:'time', required:true})}
             </div>
-
-            <div class="row" style="margin-top:8px">
-              <button class="btn primary" type="button" id="next">המשך</button>
+            <div class="row">
+              <button class="btn" type="button" id="addSlot">הוסף מועד</button>
+              <button class="btn ghost" type="button" id="clearAll">נקה הכל</button>
             </div>
-          </div>`;
-        area.insertAdjacentHTML('beforeend', html);
-        autoscroll();
+          </form>
 
-        const list = document.getElementById('slotList');
-        const add  = document.getElementById('addSlot');
-        const clr  = document.getElementById('clearAll');
-        const form = document.getElementById('slotForm');
+          <div class="field">
+            <label>מועדים שנבחרו</label>
+            <div class="slot-preview" id="slotList" style="display:flex; gap:6px; flex-wrap:wrap"></div>
+            <div class="meta">יש לבחור לפחות מועד אחד כדי להתקדם</div>
+          </div>
 
-        function redraw(){
-          list.innerHTML = '';
-          State.data.slots.forEach((s, idx)=>{
-            const b = document.createElement('button');
-            b.type='button';
-            b.className='chip';
-            b.textContent = `${s.date} • ${s.from}–${s.to}`;
-            b.title='הסר';
-            b.onclick = ()=>{ State.data.slots.splice(idx,1); redraw(); };
-            list.appendChild(b);
-          });
-        }
-        redraw();
+          <div class="row" style="margin-top:8px">
+            <button class="btn primary" type="button" id="nextSlots">המשך</button>
+          </div>
+        </div>`;
+      area.insertAdjacentHTML('beforeend', html);
+      autoscroll();
 
-        add.onclick = ()=>{
-          const v = Object.fromEntries(new FormData(form).entries());
-          if (!Val.date(v.date) || !Val.time(v.from) || !Val.time(v.to)){
-            setStatus('יש למלא תאריך וזמני "משעה" ו"עד שעה"');
-            return;
-          }
-          if (v.to <= v.from){
-            setStatus('טווח שעות לא תקין');
-            return;
-          }
-          State.data.slots.push({ date:v.date, from:v.from, to:v.to });
-          form.reset();
-          redraw();
-        };
+      const list = document.getElementById('slotList');
+      const add  = document.getElementById('addSlot');
+      const clr  = document.getElementById('clearAll');
+      const form = document.getElementById('slotForm');
 
-        clr.onclick = ()=>{ State.data.slots.length = 0; redraw(); };
-
-        document.getElementById('next').onclick = ()=>{
-          if (!State.data.slots.length){ setStatus('יש להוסיף לפחות מועד אחד'); return; }
-          if (token !== State.token) return;
-          Chat.typing(true);
-          setTimeout(()=>{ Chat.typing(false); Chat.askStudentName(); }, 250);
-        };
+      function redraw(){
+        list.innerHTML = '';
+        State.data.slots.forEach((s, idx)=>{
+          const b = document.createElement('button');
+          b.type='button';
+          b.className='chip';
+          b.textContent = `${s.date} • ${s.from}–${s.to}`;
+          b.title='הסר';
+          b.onclick = ()=>{ State.data.slots.splice(idx,1); redraw(); };
+          list.appendChild(b);
+        });
       }
+      redraw();
+
+      add.onclick = ()=>{
+        const v = Object.fromEntries(new FormData(form).entries());
+        if (!Val.date(v.date) || !Val.time(v.from) || !Val.time(v.to)){
+          setStatus('יש למלא תאריך וזמני "משעה" ו"עד שעה"');
+          return;
+        }
+        if (v.to <= v.from){
+          setStatus('טווח שעות לא תקין');
+          return;
+        }
+        State.data.slots.push({ date:v.date, from:v.from, to:v.to });
+        form.reset();
+        redraw();
+      };
+
+      clr.onclick = ()=>{ State.data.slots.length = 0; redraw(); };
+
+      document.getElementById('nextSlots').onclick = ()=>{
+        if (!State.data.slots.length){ setStatus('יש להוסיף לפחות מועד אחד'); return; }
+        if (token !== State.token) return;
+        push(() => { clear(); Chat.askSlots(); });
+        typing(true);
+        setTimeout(()=>{ typing(false); clear(); Chat.askStudentName(); }, 200);
+      };
     },
 
     async askStudentName(){
@@ -396,8 +386,8 @@
         if (token !== State.token) return;
         State.data.studentName = v.studentName;
         push(() => { clear(); Chat.askStudentName(); });
-        Chat.typing(true);
-        setTimeout(()=>{ Chat.typing(false); Chat.askFreeMessage(); }, 250);
+        typing(true);
+        setTimeout(()=>{ typing(false); clear(); Chat.askFreeMessage(); }, 200);
       }, { once:true });
     },
 
@@ -411,7 +401,7 @@
             <textarea id="f_notes" name="notes" rows="3" placeholder="העדפות, רקע, קשיים, או כל דבר שרלוונטי"></textarea>
           </div>
           <div class="row">
-            <button class="btn" type="button" id="skip">דלג</button>
+            <button class="btn" type="button" id="skipNotes">דלג</button>
             <button class="btn primary" type="submit">המשך</button>
           </div>
         </form>`;
@@ -419,7 +409,7 @@
       autoscroll();
 
       const form = document.getElementById('notesForm');
-      document.getElementById('skip').onclick = ()=> done('');
+      document.getElementById('skipNotes').onclick = ()=> done('');
       form.addEventListener('submit', (ev)=>{
         ev.preventDefault();
         const v = Object.fromEntries(new FormData(form).entries());
@@ -430,8 +420,8 @@
         if (token !== State.token) return;
         State.data.notes = notes;
         push(() => { clear(); Chat.askFreeMessage(); });
-        Chat.typing(true);
-        setTimeout(()=>{ Chat.typing(false); Chat.summary(); }, 250);
+        typing(true);
+        setTimeout(()=>{ typing(false); clear(); Chat.summary(); }, 200);
       }
     },
 
@@ -463,10 +453,12 @@
             <button class="btn primary" id="send">שליחה</button>
           </div>
         </div>`;
+      clear(); // מציגים את הסיכום נקי
       area.insertAdjacentHTML('beforeend', html);
       autoscroll();
 
       document.getElementById('edit').onclick = ()=> goBack();
+
       document.getElementById('send').onclick = async ()=>{
         try {
           setStatus('שולח ל־Google Sheets…');
@@ -477,20 +469,22 @@
             ...State.data,
           };
           const res = await sendLeadToSheet(payload);
-          setStatus('נשלח בהצלחה ✔️');
-          bubble(`<div class="notice success">הבקשה נקלטה! נחזור אליכם בהקדם 🙏</div>`);
+          setStatus('נשלח בהצלחה');
+          bubble(`<div class="notice success">הבקשה נקלטה! נחזור אליכם בהקדם.</div>`);
         } catch (err){
           setStatus('שגיאה בשליחה');
           bubble(`<div class="notice danger">לא הצלחנו לשלוח כרגע: ${err.message}</div>`);
+          console.error(err);
         }
       };
+
       push(() => { clear(); Chat.summary(); });
     },
 
     // Flow runner
     runFlow: async (fn) => {
       clear();
-      setStatus('מוכן 🙂');
+      setStatus('מוכן');
       await fn();
     }
   };
