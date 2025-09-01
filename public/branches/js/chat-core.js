@@ -1,4 +1,4 @@
-// /branches/js/chat-core.js — Core chat UI + flow helpers (fix subject step)
+// /branches/js/chat-core.js — Core chat UI + flow helpers
 (() => {
   const cfg = window.APP_CONFIG || {};
 
@@ -8,14 +8,9 @@
   const status  = document.getElementById('statusBox');
 
   // ===== State + History =====
-  const State = {
-    history: [],
-    data: {},
-    token: 0,
-    autoScroll: true,
-  };
-  const last = () => State.history[State.history.length - 1];
-  const push = (fn) => { State.history.push(fn); updateBack(); };
+  const State = { history: [], data: {}, token: 0, autoScroll: true };
+  const last  = () => State.history[State.history.length - 1];
+  const push  = (fn) => { State.history.push(fn); updateBack(); };
   const goBack = () => {
     if (State.history.length > 1) {
       State.history.pop();
@@ -75,7 +70,6 @@
         ${help ? `<div class="meta">${help}</div>` : ''}
       </div>`;
   }
-
   function selectRow({label, name, options=[], required=false, help=''}) {
     const id = `f_${name}`;
     const opts = options.map(o => {
@@ -92,7 +86,6 @@
         ${help ? `<div class="meta">${help}</div>` : ''}
       </div>`;
   }
-
   function chipRow({label, name, options=[], multi=false, id}) {
     const chips = options.map((t)=>`<button type="button" class="chip" data-name="${name}" data-value="${t}" aria-pressed="false">${t}</button>`).join('');
     const attrId = id ? ` id="${id}"` : '';
@@ -102,7 +95,6 @@
         <div class="chips"${attrId} data-multi="${multi?'1':'0'}">${chips}</div>
       </div>`;
   }
-
   function onChips(container, onChange){
     container.addEventListener('click', (ev)=>{
       const btn = ev.target.closest('.chip');
@@ -119,16 +111,35 @@
     return [...container.querySelectorAll('.chip[aria-pressed="true"]')].map(b => b.dataset.value);
   }
 
+  // ===== API helpers =====
+  function getApi(){
+    const fromCfg = (window.APP_CONFIG||{}).SHEET_API_URL || '';
+    const fromLS  = localStorage.getItem('houston_sheet_api_url') || '';
+    return fromCfg || fromLS || '';
+  }
+
+  // ►► Fix CORS/preflight: simple request (text/plain) ◄◄
   async function sendLeadToSheet(payload){
-    if (!cfg.SHEET_API_URL || /REPLACE_WITH_YOUR_WEB_APP/.test(cfg.SHEET_API_URL)) {
-      throw new Error('SHEET_API_URL לא הוגדר. יש להחליף ל־Webhook של ה־Apps Script.');
-    }
-    const res = await fetch(cfg.SHEET_API_URL, {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json' },
+    const url = getApi();
+    if (!url) throw new Error('SHEET_API_URL לא הוגדר (אין Webhook).');
+
+    const res = await fetch(url, {
+      method: 'POST',
+      // לא application/json כדי למנוע preflight; Apps Script קורא e.postData.contents כרגיל
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload),
+      mode: 'cors',
+      redirect: 'follow',
+      keepalive: true
     });
-    if (!res.ok) throw new Error(`שגיאת רשת (${res.status})`);
+
+    // אם הדפדפן עדיין מסמן opaque (לא צפוי כאן) — נתייחס כהצלחה כדי לא לחסום את ה־Flow
+    if (res.type === 'opaque') return { ok: true, opaque: true };
+
+    if (!res.ok) {
+      const text = await res.text().catch(()=> '');
+      throw new Error(`HTTP ${res.status} ${res.statusText}${text ? ` — ${text.slice(0,140)}` : ''}`);
+    }
     const data = await res.json().catch(()=> ({}));
     return data;
   }
@@ -189,10 +200,7 @@
       const nextBtn = document.getElementById('nextSubject');
       let picked = '';
 
-      onChips(chips, (vals)=>{
-        picked = vals[0] || '';
-        nextBtn.disabled = !picked;
-      });
+      onChips(chips, (vals)=>{ picked = vals[0] || ''; nextBtn.disabled = !picked; });
 
       nextBtn.onclick = ()=>{
         if (!picked){ setStatus('אנא בחרו מקצוע'); return; }
@@ -453,13 +461,19 @@
             <button class="btn primary" id="send">שליחה</button>
           </div>
         </div>`;
-      clear(); // מציגים את הסיכום נקי
+      clear();
       area.insertAdjacentHTML('beforeend', html);
       autoscroll();
 
       document.getElementById('edit').onclick = ()=> goBack();
 
-      document.getElementById('send').onclick = async ()=>{
+      const sendBtn = document.getElementById('send');
+      let sending = false;
+
+      sendBtn.onclick = async ()=>{
+        if (sending) return;
+        sending = true;
+        sendBtn.disabled = true;
         try {
           setStatus('שולח ל־Google Sheets…');
           const payload = {
@@ -475,6 +489,8 @@
           setStatus('שגיאה בשליחה');
           bubble(`<div class="notice danger">לא הצלחנו לשלוח כרגע: ${err.message}</div>`);
           console.error(err);
+          sendBtn.disabled = false;
+          sending = false;
         }
       };
 
