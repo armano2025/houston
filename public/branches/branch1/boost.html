@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>יוסטון 👨‍🚀 – שיעור תגבור (Boost)</title>
+  <meta name="theme-color" content="#5b7cfa" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../styles.light.css?v=1" />
+</head>
+<body>
+  <main class="wrap">
+    <section class="card" role="application" aria-label="שיעור תגבור – אשף שלבים">
+      <div class="head">
+        <div class="brand">
+          <button class="btn ghost" onclick="location.href='../../index.html'">לתפריט ראשי</button>
+          <div class="logo" aria-hidden="true">HB</div>
+          <div class="title">שיעור תגבור (Boost)</div>
+          <p class="subtitle">בקשה לשיעור חד־פעמי לתלמיד/ה</p>
+        </div>
+      </div>
+
+      <div class="body" id="area" aria-live="polite" aria-atomic="false"></div>
+
+      <div class="footerbar">
+        <button id="backBtn" class="btn" disabled>חזרה</button>
+        <div class="meta" id="statusBox" role="status" aria-live="polite">מוכן 🙂</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- קונפיגורציה גלובלית -->
+  <script>
+    window.APP_CONFIG = {
+      SHEET_API_URL: "https://script.google.com/macros/s/REPLACE_WITH_YOUR_WEB_APP_DEPLOYMENT_ID/exec", // ← החלף ל־Webhook האמיתי שלך
+      PROJECT: "Houston",
+      VERSION: "2025.09.01",
+    };
+  </script>
+
+  <!-- לוגיקת ליבה + זרימה -->
+  <script src="../js/chat-core.js?v=1"></script>
+  <script src="../js/flows/boost.js?v=1"></script>
+  <script>
+    // אתחול הזרימה
+    window.addEventListener('DOMContentLoaded', () => {
+      Chat.runFlow(window.Flows.Boost.run);
+    });
+  </script>
+</body>
+</html>
