@@ -31,16 +31,20 @@
     </section>
   </main>
 
+  <!-- קונפיגורציה גלובלית -->
   <script>
     window.APP_CONFIG = {
-      SHEET_API_URL: "https://script.google.com/macros/s/REPLACE_WITH_YOUR_WEB_APP_DEPLOYMENT_ID/exec", // ← החלפה ל־Webhook האמיתי
+      SHEET_API_URL: "https://script.google.com/macros/s/AKfycbxRiJ_uMNpIJru-nNClAi787sA07hQSu7TX4cQEAm3_w3-dO2Hmp39ISxh81SqudA/exec",
       PROJECT: "Houston",
-      VERSION: "2025.09.01-fix1",
+      VERSION: "2025.09.01-fix_api",
     };
+    // אופציונלי: שמירה ל-localStorage כדי להשתמש גם ביתר הענפים (אם ייקראו את אותו chat-core.js)
+    try { localStorage.setItem('houston_sheet_api_url', window.APP_CONFIG.SHEET_API_URL); } catch(e){}
   </script>
 
-  <script src="../js/chat-core.js?v=2025.09.01-fix1"></script>
-  <script src="../js/flows/boost.js?v=2025.09.01-fix1"></script>
+  <!-- חשוב: ודא שהגרסאות האלו קיימות אצלך מהתיקון האחרון -->
+  <script src="../js/chat-core.js?v=2025.09.01-fix_api"></script>
+  <script src="../js/flows/boost.js?v=2025.09.01-fix_api"></script>
   <script>
     window.addEventListener('DOMContentLoaded', () => {
       Chat.runFlow(window.Flows.Boost.run);
