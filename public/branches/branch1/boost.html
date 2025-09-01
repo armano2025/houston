@@ -26,25 +26,22 @@
 
       <div class="footerbar">
         <button id="backBtn" class="btn" disabled>חזרה</button>
-        <div class="meta" id="statusBox" role="status" aria-live="polite">מוכן 🙂</div>
+        <div class="meta" id="statusBox" role="status" aria-live="polite">מוכן</div>
       </div>
     </section>
   </main>
 
-  <!-- קונפיגורציה גלובלית -->
   <script>
     window.APP_CONFIG = {
-      SHEET_API_URL: "https://script.google.com/macros/s/REPLACE_WITH_YOUR_WEB_APP_DEPLOYMENT_ID/exec", // ← החלף ל־Webhook האמיתי שלך
+      SHEET_API_URL: "https://script.google.com/macros/s/REPLACE_WITH_YOUR_WEB_APP_DEPLOYMENT_ID/exec", // ← החלפה ל־Webhook האמיתי
       PROJECT: "Houston",
-      VERSION: "2025.09.01",
+      VERSION: "2025.09.01-fix1",
     };
   </script>
 
-  <!-- לוגיקת ליבה + זרימה -->
-  <script src="../js/chat-core.js?v=1"></script>
-  <script src="../js/flows/boost.js?v=1"></script>
+  <script src="../js/chat-core.js?v=2025.09.01-fix1"></script>
+  <script src="../js/flows/boost.js?v=2025.09.01-fix1"></script>
   <script>
-    // אתחול הזרימה
     window.addEventListener('DOMContentLoaded', () => {
       Chat.runFlow(window.Flows.Boost.run);
     });
