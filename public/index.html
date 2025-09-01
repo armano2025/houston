@@ -2,36 +2,49 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>יוסטון – דף ראשי</title>
-  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600&display=swap" rel="stylesheet">
-  <meta name="theme-color" content="#2563eb"/>
-
-  <style>
-    :root{ --bg:#f7f8fb; --card:#fff; --brd:#e6eaf3; --txt:#0f172a }
-    *{ box-sizing:border-box }
-    body{
-      margin:0; font-family:'Rubik',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      background:var(--bg); color:var(--txt);
-    }
-    .wrap{ max-width:720px; margin:64px auto; padding:0 16px; text-align:center }
-    h1{ font-size:28px; margin:0 0 12px }
-    p.sub{ margin:0 0 32px; font-size:18px; color:#6b7280 }
-
-    .btn{
-      display:inline-block; padding:14px 28px; border-radius:14px;
-      background:#2563eb; color:#fff; text-decoration:none; font-weight:600; font-size:18px;
-      box-shadow:0 8px 16px rgba(37,99,235,.2); transition:.2s;
-    }
-    .btn:hover{ background:#1e4fd7 }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>יוסטון 👨‍🚀 – דף הבית</title>
+  <meta name="theme-color" content="#5b7cfa" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.light.css?v=1" />
 </head>
 <body>
-  <div class="wrap">
-    <h1>ברוכים הבאים ליוסטון</h1>
-    <p class="sub">המקום להשאיר פרטים ולקבל מענה מהיר מצוות בראונשטיין</p>
+  <main class="wrap">
+    <section class="card home">
+      <header class="head">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">HB</div>
+          <div class="title">יוסטון 👨‍🚀</div>
+          <p class="subtitle">בוט שירות חכם למרכז הלמידה בראונשטיין</p>
+        </div>
+      </header>
 
-    <a href="/lead.html" class="btn">השאר פרטים</a>
-  </div>
+      <div class="body">
+        <div class="bubble bot" role="status" aria-live="polite">
+          היי, אני יוסטון 👨‍🚀<br/>
+          איך אפשר לעזור היום?
+        </div>
+
+        <nav class="grid">
+          <a class="tile" href="./branches/branch3/index.html" aria-label="מנויים">
+            <h3>מנויים</h3>
+            <p>תפריט פעולות למנוי קיים (Boost / Makeup / Reschedule / Billing / Message / Cancel)</p>
+          </a>
+
+          <a class="tile" href="./branches/branch1/boost.html" aria-label="לא מנויים – שיעור תגבור">
+            <h3>לא מנויים</h3>
+            <p>בקשת שיעור תגבור חד־פעמי</p>
+          </a>
+
+          <a class="tile" href="./branches/branch2.html" aria-label="פרטי מנוי חודשי">
+            <h3>פרטי מנוי חודשי</h3>
+            <p>מידע על מסלולים, מחירים והרשמה</p>
+          </a>
+        </nav>
+      </div>
+    </section>
+  </main>
 </body>
 </html>
