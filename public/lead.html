@@ -1,117 +1,101 @@
+<!-- /lead.html
+     דף "השארת פרטים": טופס RTL נגיש. שולח ל־Apps Script כ-text/plain, מעביר origin,
+     לוכד UTM/referrer/UA, מציג הצלחה או "כבר קיבלנו" (dup), ומנתב ל-thanks בהצלחה. -->
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>יוסטון – השארת פרטים</title>
-  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600&display=swap" rel="stylesheet">
-  <meta name="theme-color" content="#2563eb"/>
-
-  <style>
-    :root{ --bg:#f7f8fb; --card:#fff; --brd:#e6eaf3; --txt:#0f172a; --muted:#6b7280 }
-    *{ box-sizing:border-box }
-    body{
-      margin:0; font-family:'Rubik',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      background:var(--bg); color:var(--txt);
-    }
-    .wrap{ max-width:660px; margin:32px auto; padding:0 16px }
-    .card{
-      background:var(--card); border:1px solid var(--brd); border-radius:16px;
-      box-shadow:0 10px 30px rgba(15,23,42,.08); padding:22px;
-    }
-    h1{ font-size:22px; margin:0 0 12px }
-    p.sub{ margin:0 0 18px; color:var(--muted) }
-
-    form{ display:grid; gap:12px }
-    label{ font-weight:600; font-size:14px }
-    input, select, textarea, button{ font-family:inherit; font-size:16px }
-    input, select, textarea{
-      width:100%; padding:12px 14px; border:1px solid var(--brd); border-radius:12px; background:#fff;
-    }
-    textarea{ min-height:96px; resize:vertical }
-    .row{ display:grid; gap:12px; grid-template-columns:1fr }
-    @media (min-width:560px){ .row{ grid-template-columns:1fr 1fr } }
-
-    /* Honeypot – לא להסיר */
-    .hp{ position:absolute !important; left:-9999px !important; opacity:0 !important; width:1px; height:1px }
-
-    .actions{ display:flex; gap:10px; align-items:center; margin-top:4px }
-    button{
-      border:0; padding:12px 18px; border-radius:12px; cursor:pointer;
-      background:#2563eb; color:#fff; font-weight:600;
-      box-shadow:0 8px 16px rgba(37,99,235,.2); transition:.2s;
-    }
-    button[disabled]{ opacity:.6; cursor:not-allowed; box-shadow:none }
-    #msg{ font-size:14px; color:var(--muted) }
-    .ok{ color:#0f766e } .err{ color:#b91c1c }
-  </style>
+  <meta name="theme-color" content="#5b7cfa" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.light.css?v=2" />
 </head>
 <body>
-  <div class="wrap">
-    <div class="card">
-      <h1>השארת פרטים</h1>
-      <p class="sub">ממלאים דקה, ואנחנו חוזרים אליך בהקדם.</p>
-
-      <form id="leadForm" novalidate>
-        <div class="row">
-          <div>
-            <label for="firstName">שם פרטי *</label>
-            <input id="firstName" name="firstName" placeholder="לדוגמה: נועה" autocomplete="given-name" required autofocus />
-          </div>
-          <div>
-            <label for="lastName">שם משפחה</label>
-            <input id="lastName" name="lastName" placeholder="אופציונלי" autocomplete="family-name" />
-          </div>
+  <main class="wrap">
+    <section class="card">
+      <header class="head">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">HB</div>
+          <div class="title">השארת פרטים</div>
+          <p class="subtitle">ממלאים דקה – ונחזור בהקדם</p>
         </div>
+      </header>
 
-        <div class="row">
-          <div>
-            <label for="phone">טלפון *</label>
-            <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel"
-                   placeholder="05XXXXXXXX"
-                   pattern="^0[0-9]{8,9}$"
-                   title="מספר ישראלי: מתחיל ב־0 ואורך 9–10 ספרות"
-                   required />
+      <div class="body">
+        <form id="leadForm" novalidate>
+          <div class="row" style="gap:14px; flex-wrap:wrap">
+            <div class="field" style="min-width:240px; flex:1">
+              <label for="firstName">שם פרטי *</label>
+              <input id="firstName" name="firstName" placeholder="לדוגמה: נועה" autocomplete="given-name" required autofocus />
+            </div>
+            <div class="field" style="min-width:240px; flex:1">
+              <label for="lastName">שם משפחה</label>
+              <input id="lastName" name="lastName" placeholder="אופציונלי" autocomplete="family-name" />
+            </div>
           </div>
-          <div>
-            <label for="subject">מקצוע *</label>
-            <select id="subject" name="subject" required>
-              <option value="" disabled selected>בחר מקצוע</option>
-              <option>מתמטיקה</option>
-              <option>אנגלית</option>
-              <option>פיזיקה</option>
-              <option>שפה</option>
-            </select>
+
+          <div class="row" style="gap:14px; flex-wrap:wrap">
+            <div class="field" style="min-width:240px; flex:1">
+              <label for="phone">טלפון *</label>
+              <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel"
+                     placeholder="05XXXXXXXX"
+                     pattern="^0[0-9]{8,9}$"
+                     title="מספר ישראלי: מתחיל ב־0 ואורך 9–10 ספרות"
+                     required />
+              <div class="meta">מספר ישראלי (0 + 9–10 ספרות). נקה אוטומטית תווים לא ספרתיים.</div>
+            </div>
+
+            <div class="field" style="min-width:240px; flex:1">
+              <label for="subject">מקצוע *</label>
+              <select id="subject" name="subject" required>
+                <option value="" disabled selected>— בחרו —</option>
+                <option>מתמטיקה</option>
+                <option>אנגלית</option>
+                <option>פיזיקה</option>
+                <option>שפה</option>
+              </select>
+            </div>
           </div>
-        </div>
 
-        <div>
-          <label for="notes">מה חשוב שנדע?</label>
-          <textarea id="notes" name="notes" placeholder="למשל: ימים מועדפים, כיתה, רמת קושי"></textarea>
-        </div>
+          <div class="field">
+            <label for="notes">מה חשוב שנדע?</label>
+            <textarea id="notes" name="notes" rows="3" placeholder="למשל: ימים מועדפים, כיתה, רמת קושי"></textarea>
+          </div>
 
-        <!-- Honeypot: לא להסיר/לשנות את השם -->
-        <input class="hp" name="website" tabindex="-1" autocomplete="off" />
+          <!-- Honeypot: לא להסיר/לשנות את השם -->
+          <input class="hp" name="website" tabindex="-1" autocomplete="off" />
 
-        <div class="actions">
-          <button id="submitBtn" type="submit" aria-label="שליחת הטופס">שלח</button>
-          <div id="msg" role="status" aria-live="polite"></div>
-        </div>
-      </form>
-    </div>
-  </div>
+          <div class="row" style="margin-top:8px">
+            <button id="submitBtn" class="btn primary" type="submit" aria-label="שליחת הטופס">שלח</button>
+            <span id="msg" class="status" role="status" aria-live="polite"></span>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
 
   <script>
-  // ===== קנפג פה את כתובת ה-Web App וה-origin =====
+  // קונפיג
   const ENDPOINT = 'https://script.google.com/macros/s/AKfycbxRiJ_uMNpIJru-nNClAi787sA07hQSu7TX4cQEAm3_w3-dO2Hmp39ISxh81SqudA/exec';
   const ORIGIN   = location.origin;
+
+  // לכידת utm/referrer/userAgent לתוך raw (לצד השרת)
+  function collectContext(){
+    const p = new URLSearchParams(location.search);
+    const ctx = { referrer: document.referrer || '', userAgent: navigator.userAgent || '' };
+    ['utm_source','utm_medium','utm_campaign','utm_term','utm_content'].forEach(k => ctx[k] = p.get(k) || '');
+    return ctx;
+  }
 
   const form = document.getElementById('leadForm');
   const btn  = document.getElementById('submitBtn');
   const msg  = document.getElementById('msg');
   const phoneInput = document.getElementById('phone');
 
-  // ניקוי מספר: משאיר רק ספרות בזמן ההקלדה
+  // ניקוי תווים לא־ספרתיים בזמן הקלדה
   phoneInput.addEventListener('input', (e) => {
     e.target.value = e.target.value.replace(/[^\d]/g, '');
   });
@@ -119,7 +103,7 @@
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
 
-    // טרימינג והשלמות קטנות לפני ולידציה
+    // טרימינג לשדות טקסט
     ['firstName','lastName','notes'].forEach(id => {
       const el = document.getElementById(id);
       if (el && typeof el.value === 'string') el.value = el.value.trim();
@@ -129,15 +113,18 @@
 
     btn.disabled = true;
     const prevTxt = btn.textContent;
-    btn.textContent = 'שולח...';
-    msg.className = ''; msg.textContent = '';
+    btn.textContent = 'שולח…';
+    msg.className = 'status';
+    msg.textContent = 'שולח לשרת…';
 
+    // הכנת נתונים
     const data = Object.fromEntries(new FormData(form).entries());
-    const url  = ENDPOINT + '?origin=' + encodeURIComponent(ORIGIN);
+    data.context = collectContext(); // יישמר ב-raw
+    const url = ENDPOINT + '?origin=' + encodeURIComponent(ORIGIN);
 
     try {
-      // שולחים כ-text/plain כדי למנוע preflight (OPTIONS)
-      const res  = await fetch(url, {
+      // שולחים כ-text/plain כדי להימנע מ-preflight (Apps Script קורא זאת ב-parseBody_)
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type':'text/plain' },
         body: JSON.stringify(data)
@@ -148,16 +135,21 @@
       try { j = JSON.parse(text); } catch(_) {}
 
       if (j && j.ok) {
-        msg.className = 'ok';
-        msg.textContent = 'נקלט בהצלחה. מספר תיק: ' + j.caseId;
-        form.reset();
+        if (j.caseId === 'dup') {
+          msg.className = 'status ok';
+          msg.textContent = 'כבר קיבלנו את הפרטים לפני רגע – נחזור אליך בהקדם.';
+        } else {
+          // הצלחה: ניתוב לעמוד תודה
+          location.assign('/thanks.html?caseId=' + encodeURIComponent(j.caseId));
+          return;
+        }
       } else {
         const err = (j && j.error) || (res.ok ? 'unknown' : ('HTTP ' + res.status));
-        msg.className = 'err';
+        msg.className = 'status err';
         msg.textContent = 'שגיאה: ' + err;
       }
     } catch (e) {
-      msg.className = 'err';
+      msg.className = 'status err';
       msg.textContent = 'שגיאת רשת. נסה שוב.';
     } finally {
       btn.disabled = false;
