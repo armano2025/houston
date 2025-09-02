@@ -1,0 +1,47 @@
+<!-- /thanks.html
+     עמוד תודה: מציג את מספר התיק (caseId) מה-URL, באותו עיצוב גלובלי, עם כפתור חזרה. -->
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>יוסטון – תודה!</title>
+  <meta name="theme-color" content="#5b7cfa" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.light.css?v=2" />
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <header class="head">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">HB</div>
+          <div class="title">תודה! קיבלנו את הפרטים</div>
+          <p class="subtitle">נחזור אליך בהקדם</p>
+        </div>
+      </header>
+
+      <div class="body">
+        <div class="bubble bot">
+          מספר התיק שלך:
+        </div>
+        <div class="bubble user">
+          <span id="caseBadge" class="badge">—</span>
+        </div>
+
+        <div class="row" style="margin-top:8px">
+          <a class="btn" href="/">חזרה לדף הבית</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const p = new URLSearchParams(location.search);
+    const id = p.get('caseId');
+    document.getElementById('caseBadge').textContent = id ? ('#' + id) : 'לא ידוע';
+  </script>
+</body>
+</html>
