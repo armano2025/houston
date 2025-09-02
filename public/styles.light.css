@@ -1,11 +1,13 @@
-/* styles.light.css — עיצוב גלובלי לשנת 2025, RTL, רספונסיבי, נגישות, glassmorphism */
+/* /styles.light.css
+   עיצוב גלובלי לשנת 2025: RTL, רספונסיבי, dark mode, glassmorphism.
+   קובץ יחיד לכל העמודים (index/lead/thanks). כולל שיפורי נגישות ופוקוס. */
 
 :root{
-  --bg: #f6f8fb;
-  --card: rgba(255,255,255,0.8);
-  --glass: blur(10px) saturate(120%);
-  --border: #e6eaf3;
-  --text: #0f172a;
+  --bg:#f6f8fb;
+  --card:rgba(255,255,255,0.8);
+  --glass:blur(10px) saturate(120%);
+  --border:#e6eaf3;
+  --text:#0f172a;
   --muted:#64748b;
   --brand:#5b7cfa;
   --brand-2:#6ee7f9;
@@ -13,21 +15,15 @@
   --danger:#ef4444;
   --chip:#f1f5f9;
   --chip-brd:#e2e8f0;
-  --shadow: 0 8px 30px rgba(15,23,42,0.08);
+  --shadow:0 8px 30px rgba(15,23,42,0.08);
   --radius:16px;
   --gap:14px;
 }
-
-/* Dark mode (מופעל אוטומטית לפי מערכת ההפעלה) */
 @media (prefers-color-scheme: dark){
   :root{
-    --bg:#0b1220;
-    --card: rgba(17,24,39,0.7);
-    --border:#1f2937;
-    --text:#e5e7eb;
-    --muted:#94a3b8;
-    --chip:#111827;
-    --chip-brd:#1f2937;
+    --bg:#0b1220; --card:rgba(17,24,39,0.7); --border:#1f2937;
+    --text:#e5e7eb; --muted:#94a3b8;
+    --chip:#111827; --chip-brd:#1f2937;
     --shadow:0 10px 40px rgba(0,0,0,0.5);
   }
 }
@@ -44,126 +40,89 @@ body{
   color:var(--text);
 }
 
-.wrap{
-  min-height:100dvh;
-  display:grid;
-  place-items:center;
-  padding:24px;
-}
-
+.wrap{ min-height:100dvh; display:grid; place-items:center; padding:24px }
 .card{
   width:min(980px,100%);
   background:var(--card);
-  -webkit-backdrop-filter: var(--glass);
-  backdrop-filter: var(--glass);
-  border:1px solid var(--border);
-  border-radius:24px;
-  box-shadow:var(--shadow);
+  -webkit-backdrop-filter:var(--glass); backdrop-filter:var(--glass);
+  border:1px solid var(--border); border-radius:24px; box-shadow:var(--shadow);
   overflow:hidden;
 }
-
-.head{
-  padding:22px 22px 0;
-}
-
+.head{ padding:22px 22px 0 }
 .brand{ display:flex; align-items:center; gap:12px; flex-wrap:wrap }
 .logo{
-  width:44px; height:44px; border-radius:12px;
-  display:grid; place-items:center;
-  background: linear-gradient(135deg, var(--brand), var(--brand-2));
-  color:#fff; font-weight:800;
-  letter-spacing:1px;
+  width:44px; height:44px; border-radius:12px; display:grid; place-items:center;
+  background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; font-weight:800; letter-spacing:1px;
 }
 .title{ font-size:1.4rem; font-weight:700 }
 .subtitle{ margin:0; color:var(--muted) }
-
 .body{ padding:18px 22px 24px }
 
 .bubble{
-  max-width:720px;
-  padding:12px 14px;
-  border-radius:16px;
-  border:1px solid var(--border);
-  background:#fff;
-  margin:8px 0;
+  max-width:720px; padding:12px 14px; border-radius:16px;
+  border:1px solid var(--border); background:#fff; margin:8px 0;
 }
-@media (prefers-color-scheme: dark){
-  .bubble{ background:rgba(255,255,255,0.06) }
-}
+@media (prefers-color-scheme: dark){ .bubble{ background:rgba(255,255,255,0.06) } }
 .bubble.bot{ border-style:dashed }
 .bubble.user{ margin-inline-start:auto }
 
-.grid{
-  margin-top:12px;
-  display:grid; gap:var(--gap);
-  grid-template-columns:1fr;
-}
-@media (min-width:720px){
-  .grid{ grid-template-columns: 1fr 1fr 1fr }
-}
+.grid{ margin-top:12px; display:grid; gap:var(--gap); grid-template-columns:1fr }
+@media (min-width:720px){ .grid{ grid-template-columns:1fr 1fr 1fr } }
 .tile{
-  display:block;
-  text-decoration:none;
-  color:inherit;
+  display:block; text-decoration:none; color:inherit;
   background:linear-gradient(180deg, rgba(255,255,255,.85), rgba(255,255,255,.6));
-  border:1px solid var(--border);
-  border-radius:16px; padding:16px;
+  border:1px solid var(--border); border-radius:16px; padding:16px;
   transition:transform .15s ease, box-shadow .15s ease;
 }
 @media (prefers-color-scheme: dark){
   .tile{ background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04)) }
 }
-.tile:hover, .tile:focus-visible{
-  outline:none;
-  transform:translateY(-2px);
-  box-shadow:0 10px 30px rgba(0,0,0,.08);
-}
+.tile:hover,.tile:focus-visible{ outline:none; transform:translateY(-2px); box-shadow:0 10px 30px rgba(0,0,0,.08) }
 
 .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap }
 .btn{
-  appearance:none; border:1px solid var(--border);
-  background:#fff; color:var(--text);
+  appearance:none; border:1px solid var(--border); background:#fff; color:var(--text);
   padding:10px 14px; border-radius:12px; font-weight:600; cursor:pointer;
 }
-@media (prefers-color-scheme: dark){
-  .btn{ background:rgba(255,255,255,0.06) }
-}
-.btn.primary{
-  background:linear-gradient(135deg, var(--brand), var(--brand-2)); color:#fff; border-color:transparent;
-}
+@media (prefers-color-scheme: dark){ .btn{ background:rgba(255,255,255,0.06) } }
+.btn.primary{ background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; border-color:transparent }
 .btn.ghost{ background:transparent }
 
 .chips{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px }
 .chip{
-  padding:8px 10px; border-radius:999px;
-  background:var(--chip); border:1px solid var(--chip-brd);
-  cursor:pointer; user-select:none;
+  padding:8px 10px; border-radius:999px; background:var(--chip);
+  border:1px solid var(--chip-brd); cursor:pointer; user-select:none;
 }
-.chip[aria-pressed="true"]{
-  outline:2px solid var(--brand);
-  outline-offset:1px;
-}
+.chip[aria-pressed="true"]{ outline:2px solid var(--brand); outline-offset:1px }
 
 .field{ margin:10px 0 }
 label{ display:block; font-weight:600; margin-bottom:6px }
-input, select, textarea{
+input,select,textarea{
   width:100%; padding:10px 12px; border-radius:12px;
   border:1px solid var(--border); background:#fff; color:var(--text);
 }
-@media (prefers-color-scheme: dark){
-  input,select,textarea{ background:rgba(255,255,255,0.06) }
-}
-input[type="date"], input[type="time"]{ padding:8px 10px }
+@media (prefers-color-scheme: dark){ input,select,textarea{ background:rgba(255,255,255,0.06) } }
+input[type="date"],input[type="time"]{ padding:8px 10px }
 
 .meta{ color:var(--muted); font-size:.925rem }
-
 .footerbar{
-  position:sticky; bottom:0; inset-inline:0;
-  display:flex; gap:10px; padding:10px; background:linear-gradient(180deg, transparent, rgba(0,0,0,.03));
-  backdrop-filter: blur(6px);
+  position:sticky; bottom:0; inset-inline:0; display:flex; gap:10px; padding:10px;
+  background:linear-gradient(180deg, transparent, rgba(0,0,0,.03)); backdrop-filter:blur(6px);
 }
-
 .notice.success{ color:var(--success) }
 .notice.danger{ color:var(--danger) }
-
 .topbar{ display:flex; justify-content:space-between; gap:10px; margin-bottom:10px }
+
+/* --- שיפורי UX/נגישות לטפסים (תוספת) --- */
+input:focus,select:focus,textarea:focus{
+  outline:none; box-shadow:0 0 0 4px color-mix(in oklab, var(--brand) 25%, transparent);
+  border-color: color-mix(in oklab, var(--brand) 60%, var(--border));
+}
+input:invalid,select:invalid,textarea:invalid{ border-color:#ef4444 }
+.status{ font-size:.95rem; color:var(--muted) }
+.status.ok{ color:var(--success) }
+.status.err{ color:var(--danger) }
+.badge{
+  display:inline-block; padding:8px 12px; border-radius:999px;
+  background:var(--chip); border:1px solid var(--chip-brd); font-weight:700;
+}
