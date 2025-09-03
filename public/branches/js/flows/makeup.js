@@ -1,11 +1,16 @@
-// /branches/js/flows/makeup.js
-// זרימת "שיעור השלמה (Makeup)" לצ'אט: פרטי קשר → פרטי שיעור → מורה → מועד שהוחמץ → סיבה → מועדים חלופיים (שעות עגולות בלבד 08:00–22:00, עם אפשרות דילוג) → הערות → סיכום → שליחה.
+// /public/branches/js/flows/makeup.js
+// זרימת "שיעור השלמה (Makeup)" לצ'אט בלבד: פרטי קשר → פרטי שיעור → מורה → מועד שהוחמץ → סיבה
+// → מועדים חלופיים (08:00–22:00 שעות עגולות, עם אפשרות דילוג) → הערות → סיכום → שליחה.
+console.info('[makeup.js] loaded');
 
 window.Flows = window.Flows || {};
 window.Flows.Makeup = (() => {
   const HOURS = Array.from({length: 15}, (_,i)=> String(i+8).padStart(2,'0') + ':00'); // 08:00..22:00
+  const area = document.getElementById('area');
+  const { fieldRow, selectRow, chipRow, onChips } = window;
 
   function run(){
+    console.info('[makeup] run() start');
     Chat.clear();
     Chat.setStatus('מוכן');
     Chat.bubble('היי, אשמח לעזור לך לתאם שיעור השלמה 👨‍🚀<br/>נתחיל מפרטי קשר קצרצרים:');
@@ -21,15 +26,15 @@ window.Flows.Makeup = (() => {
     });
   }
 
-  /* שלב 2: פרטי שיעור – תלמיד/מקצוע/מסלול/כיתה/יחידות */
+  /* שלב 2: פרטי שיעור – תלמיד/מקצוע/מסלול/כיתה/יחידות/שיעור שהוחמץ/סיבה */
   function stepLessonDetails(){
     const token = ++Chat.State.token;
     const name = (Chat.State.data.firstName||'').trim() || '';
     Chat.bubble(`בכיף ${name||'🙂'}, אשמח לעזור לך לתאם שיעור השלמה 👨‍🚀<br/>נרשום כמה פרטים על השיעור שהוחמץ ✏️`);
 
-    const grades = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ז׳','ח׳','ט׳','י׳','י״א','י״ב','סטודנט'];
+    const grades   = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ז׳','ח׳','ט׳','י׳','י״א','י״ב','סטודנט'];
     const subjects = ['מתמטיקה','אנגלית','פיזיקה','שפה','הוראה מתקנת','אנגלית מדוברת'];
-    const tracks = ['קבוצתי','טריפל','פרטי'];
+    const tracks   = ['קבוצתי','טריפל','פרטי'];
 
     const html = `
       <form id="detailsForm" class="bubble user" novalidate>
@@ -62,13 +67,12 @@ window.Flows.Makeup = (() => {
     area.insertAdjacentHTML('beforeend', html);
     Chat.autoscroll?.();
 
-    const form = document.getElementById('detailsForm');
-    const gradeSel = document.getElementById('f_grade');
+    const form      = document.getElementById('detailsForm');
+    const gradeSel  = document.getElementById('f_grade');
     const unitsWrap = document.getElementById('unitsWrap');
-    const chipsUnits = document.getElementById('chips_units');
-    const chipsTrack = document.getElementById('chips_track');
+    const chipsUnits= document.getElementById('chips_units');
+    const chipsTrack= document.getElementById('chips_track');
 
-    // הצגת יחידות רק לי/י״א/י״ב
     function toggleUnits(){
       const g = (gradeSel.value||'').replace(/"/g,'');
       const need = ['י׳','י״א','י״ב'].includes(g);
@@ -77,7 +81,6 @@ window.Flows.Makeup = (() => {
     gradeSel.addEventListener('change', toggleUnits);
     toggleUnits();
 
-    // חיוג צ׳יפים
     let trackPicked = '';
     onChips(chipsTrack, (vals)=> trackPicked = vals[0] || '');
     let unitsPicked = '';
@@ -134,13 +137,12 @@ window.Flows.Makeup = (() => {
     area.insertAdjacentHTML('beforeend', html);
     Chat.autoscroll?.();
 
-    const form = document.getElementById('teacherForm');
     document.getElementById('backBtn2').onclick = ()=> Chat.goBack?.();
 
-    form.addEventListener('submit',(ev)=>{
+    document.getElementById('teacherForm').addEventListener('submit',(ev)=>{
       ev.preventDefault();
       if (token !== Chat.State.token) return;
-      const v = Object.fromEntries(new FormData(form).entries());
+      const v = Object.fromEntries(new FormData(ev.currentTarget).entries());
       if (!Chat.Val.nonEmpty(v.teacher)) return Chat.setStatus('נא למלא שם מורה');
 
       Chat.State.data.teacher = v.teacher.trim();
@@ -230,7 +232,6 @@ window.Flows.Makeup = (() => {
     document.getElementById('nextSlots').onclick = ()=>{
       if (token !== Chat.State.token) return;
       if (!Chat.State.data.desiredSlots.length){
-        // לא דילג ולא הוסיף → נדרוש לפחות מועד אחד
         return Chat.setStatus('בחר/י לפחות מועד אחד להשלמה או דלג/י כרגע');
       }
       Chat.State.data.desiredPreference = 'יש העדפות';
@@ -279,7 +280,6 @@ window.Flows.Makeup = (() => {
   function stepSummary(){
     Chat.clear();
     const d = Chat.State.data;
-    const name = (d.firstName||'').trim() || 'שם פרטי';
 
     Chat.bubble('<strong>סיכום הבקשה</strong><br><span class="meta">בדקו שהכול נכון לפני שליחה.</span>');
     const rows = [
@@ -316,7 +316,6 @@ window.Flows.Makeup = (() => {
   async function submit(){
     const d = Chat.State.data;
 
-    // בדיקות אחרונות
     const errs=[];
     if(!Chat.Val.nonEmpty(d.firstName)) errs.push('first');
     if(!Chat.Val.nonEmpty(d.lastName))  errs.push('last');
@@ -339,18 +338,12 @@ window.Flows.Makeup = (() => {
       flow: 'makeup',
       createdAt: new Date().toISOString(),
       project: (window.APP_CONFIG||{}).PROJECT || 'Houston',
-      // מזדהה
       firstName: d.firstName, lastName: d.lastName, phone: d.phone,
-      // פרטי שיעור
       studentName: d.studentName, subject: d.subject, track: d.track||'',
-      grade: d.grade, units: d.units||'',
-      teacher: d.teacher||'',
-      // החמצה
+      grade: d.grade, units: d.units||'', teacher: d.teacher||'',
       missedDate: d.missedDate, missedTime: d.missedTime, reason: d.reason,
-      // זמינות להשלמה
       desiredPreference: d.desiredPreference || (d.desiredSlots?.length ? 'יש העדפות' : 'אין העדפה'),
       slots: (d.desiredSlots||[]).map(s=>({ date:s.date, from:s.from, to:s.to })),
-      // הערות
       notes: d.notes || ''
     };
 
@@ -359,12 +352,12 @@ window.Flows.Makeup = (() => {
       const res = await (window.sendLeadToSheet ? window.sendLeadToSheet(payload) : Chat.sendLeadToSheet(payload));
       if (res && res.ok){
         Chat.clear();
-        Chat.bubble(`היי ${ (d.firstName||'').trim() || '🙂' }, בקשת ההשלמה נקלטה ✅<br/>ניצור קשר לתיאום מועד מתאים 👨‍🚀`).classList?.add?.('ok');
-        const home = document.createElement('button');
-        home.className = 'btn'; home.textContent = 'חזרה לתפריט מנוי/ה';
+        const fname = (d.firstName||'').trim() || '🙂';
+        Chat.bubble(`היי ${fname}, בקשת ההשלמה נקלטה ✅<br/>ניצור קשר לתיאום מועד מתאים 👨‍🚀`).classList?.add?.('ok');
+        const row = document.createElement('div'); row.className='bubble user';
+        const home = document.createElement('button'); home.className='btn'; home.textContent='חזרה לתפריט מנוי/ה';
         home.onclick = ()=> location.href='index.html';
-        const wrap = document.createElement('div'); wrap.className='bubble user'; wrap.appendChild(home);
-        area.appendChild(wrap);
+        row.appendChild(home); area.appendChild(row);
       } else {
         throw new Error((res && res.error) || 'server_error');
       }
@@ -377,10 +370,6 @@ window.Flows.Makeup = (() => {
       Chat.setStatus('שגיאה: ' + err.message);
     }
   }
-
-  // קיצור לשימוש פנימי של ה-UI builders מהליבה
-  const area = document.getElementById('area');
-  const { fieldRow, selectRow, chipRow, onChips } = window;
 
   return { run };
 })();
