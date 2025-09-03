@@ -1,14 +1,15 @@
-// /branches/js/chat-core.js — Core chat UI + flow helpers
-(() => {
-  const cfg = window.APP_CONFIG || {};
+/* /public/branches/js/chat-core.js
+   ליבת צ'אט כללית: מצב/היסטוריה, עזרי UI, ולידציות, רכיבי טופס, ושליחה ל-Google Sheets.
+   חשוב: אין כאן שלבים ספציפיים לזרימה (לא מקצוע/תעריף/כיתה וכו'). כל זה ב-Flow ייעודי. */
 
+(() => {
   // ===== DOM =====
   const area    = document.getElementById('area');
   const backBtn = document.getElementById('backBtn');
   const status  = document.getElementById('statusBox');
 
   // ===== State + History =====
-  const State = { history: [], data: {}, token: 0, autoScroll: true };
+  const State = { history: [], data: {}, token: 0 };
   const last  = () => State.history[State.history.length - 1];
   const push  = (fn) => { State.history.push(fn); updateBack(); };
   const goBack = () => {
@@ -34,6 +35,9 @@
     autoscroll();
     return el;
   }
+  function botText(text){ return bubble(String(text), 'bot'); }
+  function botHTML(html){ return bubble(html, 'bot'); }
+  function userBubble(html){ return bubble(html, 'user'); }
   function typing(on=true){
     let el = document.getElementById('typingRow');
     if (on){
@@ -51,6 +55,43 @@
     }
     autoscroll();
   }
+  function button(text, onclick, className='btn'){
+    const row = document.createElement('div');
+    row.className = 'row';
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = className; b.textContent = text;
+    b.onclick = onclick;
+    const wrap = document.createElement('div');
+    wrap.className = 'bubble user';
+    row.appendChild(b); wrap.appendChild(row); area.appendChild(wrap);
+    autoscroll();
+    return b;
+  }
+  function chip(text){
+    const el = document.createElement('span');
+    el.className = 'chip';
+    el.textContent = text;
+    return el;
+  }
+  function summaryCard(rows){
+    const card = document.createElement('div');
+    card.className = 'bubble user';
+    const inner = document.createElement('div');
+    inner.className = 'summary';
+    inner.innerHTML = rows.map(([k,v]) => `<div><strong>${k}:</strong> ${v||'-'}</div>`).join('');
+    card.appendChild(inner);
+    area.appendChild(card);
+    autoscroll();
+    return card;
+  }
+  function inlineError(msg, focusEl){
+    setStatus(msg);
+    if (focusEl && focusEl.focus) { focusEl.focus(); }
+  }
+  function showProcessing(text='מעבד…'){
+    const row = bubble(`<div class="meta">${text}</div>`, 'bot');
+    return () => { row.remove(); };
+  }
 
   // ===== Validators =====
   const Val = {
@@ -60,26 +101,26 @@
     time: (s) => /^\d{2}:\d{2}$/.test(s),
   };
 
-  // ===== UI builders =====
-  function fieldRow({label, name, type='text', placeholder='', value='', required=false, help=''}) {
-    const id = `f_${name}`;
+  // ===== UI builders (HTML strings) =====
+  function fieldRow({label, name, type='text', placeholder='', value='', required=false, help='', id}) {
+    const _id = id || `f_${name}`;
     return `
       <div class="field">
-        <label for="${id}">${label}${required ? ' *' : ''}</label>
-        <input id="${id}" name="${name}" type="${type}" placeholder="${placeholder}" value="${value}"/>
+        <label for="${_id}">${label}${required ? ' *' : ''}</label>
+        <input id="${_id}" name="${name}" type="${type}" placeholder="${placeholder}" value="${value}"/>
         ${help ? `<div class="meta">${help}</div>` : ''}
       </div>`;
   }
-  function selectRow({label, name, options=[], required=false, help=''}) {
-    const id = `f_${name}`;
+  function selectRow({label, name, options=[], required=false, help='', id}) {
+    const _id = id || `f_${name}`;
     const opts = options.map(o => {
       const [val, text] = Array.isArray(o) ? o : [o, o];
       return `<option value="${String(val)}">${String(text)}</option>`;
     }).join('');
     return `
       <div class="field">
-        <label for="${id}">${label}${required ? ' *' : ''}</label>
-        <select id="${id}" name="${name}">
+        <label for="${_id}">${label}${required ? ' *' : ''}</label>
+        <select id="${_id}" name="${name}">
           <option value="">— בחרו —</option>
           ${opts}
         </select>
@@ -117,15 +158,13 @@
     const fromLS  = localStorage.getItem('houston_sheet_api_url') || '';
     return fromCfg || fromLS || '';
   }
-
-  // ►► Fix CORS/preflight: simple request (text/plain) ◄◄
   async function sendLeadToSheet(payload){
     const url = getApi();
     if (!url) throw new Error('SHEET_API_URL לא הוגדר (אין Webhook).');
 
     const res = await fetch(url, {
       method: 'POST',
-      // לא application/json כדי למנוע preflight; Apps Script קורא e.postData.contents כרגיל
+      // text/plain כדי לא לעורר preflight; Apps Script יקרא e.postData.contents
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload),
       mode: 'cors',
@@ -133,9 +172,7 @@
       keepalive: true
     });
 
-    // אם הדפדפן עדיין מסמן opaque (לא צפוי כאן) — נתייחס כהצלחה כדי לא לחסום את ה־Flow
     if (res.type === 'opaque') return { ok: true, opaque: true };
-
     if (!res.ok) {
       const text = await res.text().catch(()=> '');
       throw new Error(`HTTP ${res.status} ${res.statusText}${text ? ` — ${text.slice(0,140)}` : ''}`);
@@ -144,11 +181,10 @@
     return data;
   }
 
-  // ===== Chat steps =====
-  const Chat = {
-    clear, bubble, typing, setStatus, push, goBack, last, Val,
-
-    async askContact(init={}){
+  // ===== Prompts גנריים לשימוש בזרימות =====
+  // פרטי קשר בסיסיים
+  function askContact(init={}){
+    return new Promise((resolve)=>{
       const token = ++State.token;
       bubble('נתחיל מפרטי קשר 👨‍🚀');
       const html = `
@@ -175,335 +211,159 @@
         if (token !== State.token) return;
         State.data = { ...State.data, ...v };
         setStatus('פרטי קשר התקבלו');
-        push(() => { clear(); Chat.askContact(State.data); });
-        typing(true);
-        setTimeout(()=>{ typing(false); clear(); Chat.selectSubject(); }, 250);
+        push(() => { clear(); askContact(State.data); });
+        resolve({ ...v });
       }, { once:true });
 
       document.getElementById('cancelBtn').onclick = ()=> { location.href='../../index.html'; };
-    },
+    });
+  }
 
-    async selectSubject(){
+  // שדה טקסט חופשי/הודעה (עם אפשרות דילוג)
+  function askFreeMessage({ titleHtml, messageLabel='הודעה', messagePlaceholder='', requireMessage=false, nextText='המשך', includeNotes=false, showBack=true } = {}){
+    return new Promise((resolve)=>{
       const token = ++State.token;
-      bubble('באיזה מקצוע תרצו תגבור? 👨‍🚀');
+      if (titleHtml) botHTML(titleHtml);
+
       const html = `
-        <div class="bubble user" id="subjectStep">
-          ${chipRow({label:'בחרו מקצוע', name:'subject', options:['מתמטיקה','אנגלית','פיזיקה','שפה','הוראה מתקנת'], multi:false, id:'chips_subject'})}
-          <div class="row" style="margin-top:8px">
-            <button class="btn primary" id="nextSubject" disabled>המשך</button>
+        <form id="freeMsgForm" class="bubble user">
+          <div class="field">
+            <label for="free_msg">${messageLabel}${requireMessage?' *':''}</label>
+            <textarea id="free_msg" name="message" rows="3" placeholder="${messagePlaceholder||''}"></textarea>
           </div>
-        </div>`;
+          <div class="row" style="margin-top:8px">
+            ${showBack ? '<button class="btn" type="button" id="backBtnMsg">חזרה</button>' : ''}
+            ${!requireMessage ? '<button class="btn" type="button" id="skipMsg">דלג</button>' : ''}
+            <button class="btn primary" type="submit" id="okMsg">'+(nextText||'המשך')+'</button>
+          </div>
+        </form>`;
       area.insertAdjacentHTML('beforeend', html);
       autoscroll();
 
-      const chips = document.getElementById('chips_subject');
-      const nextBtn = document.getElementById('nextSubject');
-      let picked = '';
+      const form = document.getElementById('freeMsgForm');
+      if (showBack) document.getElementById('backBtnMsg').onclick = ()=> goBack();
+      if (!requireMessage) document.getElementById('skipMsg').onclick = ()=> done('');
 
-      onChips(chips, (vals)=>{ picked = vals[0] || ''; nextBtn.disabled = !picked; });
+      form.addEventListener('submit',(ev)=>{
+        ev.preventDefault();
+        const v = Object.fromEntries(new FormData(form).entries());
+        if (requireMessage && !Val.nonEmpty(v.message)) return inlineError('נא למלא הודעה', form.querySelector('#free_msg'));
+        done((v.message||'').trim());
+      }, { once:true });
 
-      nextBtn.onclick = ()=>{
-        if (!picked){ setStatus('אנא בחרו מקצוע'); return; }
+      function done(message){
         if (token !== State.token) return;
-        State.data.subject = picked;
-        push(() => { clear(); Chat.selectSubject(); });
-        typing(true);
-        setTimeout(()=>{ typing(false); clear(); Chat.selectGrade(); }, 200);
-      };
-    },
+        const out = { message };
+        if (includeNotes) out.notes = message;
+        push(()=>{ clear(); askFreeMessage({ titleHtml, messageLabel, messagePlaceholder, requireMessage, nextText, includeNotes, showBack }); });
+        resolve(out);
+      }
+    });
+  }
 
-    async selectGrade(){
+  // בחירת מועדים (צירוף תאריך + שעה אחת או טווח שעות), עם דרישת מינימום ואפשרות Back
+  function askDateTimeSlots({
+    titleHtml,
+    dateLabel='תאריך',
+    timeLabel='שעה',
+    minToday=false,
+    requireAtLeast=1,
+    times=[],            // אם לא ריק – מוצג select של שעות מהמערך
+    continueText='המשך',
+    allowBack=true
+  } = {}){
+    return new Promise((resolve)=>{
       const token = ++State.token;
-      const grades = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ז׳','ח׳','ט׳','י׳','י״א','י״ב','סטודנט'];
-      bubble('באיזו כיתה? 👨‍🚀');
-      const html = `
-        <div class="bubble user" id="gradeStep">
-          ${selectRow({label:'כיתה', name:'grade', options:grades, required:true})}
-          <div class="row" style="margin-top:8px">
-            <button class="btn primary" id="nextGrade">המשך</button>
-          </div>
-        </div>`;
-      area.insertAdjacentHTML('beforeend', html);
-      autoscroll();
+      if (titleHtml) botHTML(titleHtml);
 
-      document.getElementById('nextGrade').onclick = ()=>{
-        const grade = (document.getElementById('f_grade')||{}).value || '';
-        if (!Val.nonEmpty(grade)){ setStatus('אנא בחרו כיתה'); return; }
-        if (token !== State.token) return;
-        State.data.grade = grade;
-        push(() => { clear(); Chat.selectGrade(); });
-        typing(true);
-        setTimeout(()=>{
-          typing(false);
-          if (['י׳','י״א','י״ב'].includes(grade)) { clear(); Chat.selectUnits(); }
-          else { clear(); Chat.selectRate(); }
-        }, 200);
-      };
-    },
-
-    async selectUnits(){
-      const token = ++State.token;
-      bubble('כמה יחידות? 👨‍🚀');
-      const html = `
-        <div class="bubble user" id="unitsStep">
-          ${chipRow({label:'יחידות בגרות', name:'units', options:['3','4','5'], multi:false, id:'chips_units'})}
-          <div class="row" style="margin-top:8px">
-            <button class="btn primary" id="nextUnits" disabled>המשך</button>
-          </div>
-        </div>`;
-      area.insertAdjacentHTML('beforeend', html);
-      autoscroll();
-
-      const chips = document.getElementById('chips_units');
-      const nextBtn = document.getElementById('nextUnits');
-      let picked = '';
-      onChips(chips, (vals)=>{ picked = vals[0] || ''; nextBtn.disabled = !picked; });
-
-      nextBtn.onclick = ()=>{
-        if (!picked){ setStatus('אנא בחרו מספר יחידות'); return; }
-        if (token !== State.token) return;
-        State.data.units = picked;
-        push(() => { clear(); Chat.selectUnits(); });
-        typing(true);
-        setTimeout(()=>{ typing(false); clear(); Chat.selectRate(); }, 200);
-      };
-    },
-
-    async selectRate(){
-      const token = ++State.token;
-      bubble('נא לבחור תעריף תגבור 👨‍🚀');
-      const html = `
-        <div class="bubble user" id="rateStep">
-          ${chipRow({label:'תעריף', name:'rate', options:['70₪','90₪','160₪'], multi:false, id:'chips_rate'})}
-          <div class="row" style="margin-top:8px">
-            <button class="btn primary" id="nextRate" disabled>המשך</button>
-          </div>
-        </div>`;
-      area.insertAdjacentHTML('beforeend', html);
-      autoscroll();
-
-      const chips = document.getElementById('chips_rate');
-      const nextBtn = document.getElementById('nextRate');
-      let picked = '';
-      onChips(chips, (vals)=>{ picked = vals[0] || ''; nextBtn.disabled = !picked; });
-
-      nextBtn.onclick = ()=>{
-        if (!picked){ setStatus('אנא בחרו תעריף'); return; }
-        if (token !== State.token) return;
-        State.data.rate = picked;
-        push(() => { clear(); Chat.selectRate(); });
-        typing(true);
-        setTimeout(()=>{ typing(false); clear(); Chat.askSlots(); }, 200);
-      };
-    },
-
-    async askSlots(){
-      const token = ++State.token;
-      State.data.slots = State.data.slots || [];
-      bubble('בחרו תאריכים וטווחי שעות מועדפים 👨‍🚀 (ניתן להוסיף כמה)');
+      const timeField = times.length
+        ? `<label>${timeLabel}</label><select id="ads_time" name="time">${['','',...times].map((t,i)=> i?`<option value="${t}">${t}</option>`:'<option value="">—</option>').join('')}</select>`
+        : `${fieldRow({label:timeLabel, name:'time', type:'time', required:true, id:'ads_time'})}`;
 
       const html = `
-        <div class="bubble user" id="slotsStep">
-          <form id="slotForm" class="field">
-            ${fieldRow({label:'תאריך', name:'date', type:'date', required:true})}
-            <div class="row">
-              ${fieldRow({label:'משעה', name:'from', type:'time', required:true})}
-              ${fieldRow({label:'עד שעה', name:'to', type:'time', required:true})}
-            </div>
-            <div class="row">
-              <button class="btn" type="button" id="addSlot">הוסף מועד</button>
-              <button class="btn ghost" type="button" id="clearAll">נקה הכל</button>
+        <div class="bubble user" id="ads_wrap">
+          <form id="ads_form" class="field">
+            ${fieldRow({label:dateLabel, name:'date', type:'date', required:true, id:'ads_date'})}
+            <div class="row">${timeField}</div>
+            <div class="row" style="margin-top:8px">
+              <button class="btn" type="button" id="ads_add">+ הוסף מועד</button>
+              <button class="btn ghost" type="button" id="ads_clear">נקה</button>
             </div>
           </form>
-
           <div class="field">
             <label>מועדים שנבחרו</label>
-            <div class="slot-preview" id="slotList" style="display:flex; gap:6px; flex-wrap:wrap"></div>
-            <div class="meta">יש לבחור לפחות מועד אחד כדי להתקדם</div>
+            <div id="ads_list" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+            <div class="meta">${requireAtLeast>0?'נדרש לפחות '+requireAtLeast+' מועד':''}</div>
           </div>
-
           <div class="row" style="margin-top:8px">
-            <button class="btn primary" type="button" id="nextSlots">המשך</button>
+            ${allowBack ? '<button class="btn" type="button" id="ads_back">חזרה</button>' : ''}
+            <button class="btn primary" type="button" id="ads_next">${continueText}</button>
           </div>
         </div>`;
       area.insertAdjacentHTML('beforeend', html);
       autoscroll();
 
-      const list = document.getElementById('slotList');
-      const add  = document.getElementById('addSlot');
-      const clr  = document.getElementById('clearAll');
-      const form = document.getElementById('slotForm');
+      const list = document.getElementById('ads_list');
+      const form = document.getElementById('ads_form');
+      const dateEl= document.getElementById('ads_date');
+      const timeEl= document.getElementById('ads_time');
+      const slots = [];
 
       function redraw(){
         list.innerHTML = '';
-        State.data.slots.forEach((s, idx)=>{
+        slots.forEach((s, idx)=>{
           const b = document.createElement('button');
-          b.type='button';
-          b.className='chip';
-          b.textContent = `${s.date} • ${s.from}–${s.to}`;
-          b.title='הסר';
-          b.onclick = ()=>{ State.data.slots.splice(idx,1); redraw(); };
+          b.type='button'; b.className='chip';
+          b.textContent = s.label || `${s.date} ${s.time}`;
+          b.title='הסר'; b.onclick = ()=>{ slots.splice(idx,1); redraw(); };
           list.appendChild(b);
         });
       }
-      redraw();
 
-      add.onclick = ()=>{
-        const v = Object.fromEntries(new FormData(form).entries());
-        if (!Val.date(v.date) || !Val.time(v.from) || !Val.time(v.to)){
-          setStatus('יש למלא תאריך וזמני "משעה" ו"עד שעה"');
-          return;
-        }
-        if (v.to <= v.from){
-          setStatus('טווח שעות לא תקין');
-          return;
-        }
-        State.data.slots.push({ date:v.date, from:v.from, to:v.to });
-        form.reset();
-        redraw();
-      };
-
-      clr.onclick = ()=>{ State.data.slots.length = 0; redraw(); };
-
-      document.getElementById('nextSlots').onclick = ()=>{
-        if (!State.data.slots.length){ setStatus('יש להוסיף לפחות מועד אחד'); return; }
-        if (token !== State.token) return;
-        push(() => { clear(); Chat.askSlots(); });
-        typing(true);
-        setTimeout(()=>{ typing(false); clear(); Chat.askStudentName(); }, 200);
-      };
-    },
-
-    async askStudentName(){
-      const token = ++State.token;
-      bubble('שם התלמיד/ה ✏️');
-      const html = `
-        <form class="bubble user" id="studentForm" novalidate>
-          ${fieldRow({label:'שם התלמיד/ה', name:'studentName', placeholder:'דוגמה: נועה כהן', required:true})}
-          <div class="row">
-            <button class="btn primary" type="submit">המשך</button>
-          </div>
-        </form>`;
-      area.insertAdjacentHTML('beforeend', html);
-      autoscroll();
-
-      document.getElementById('studentForm').addEventListener('submit', (ev)=>{
-        ev.preventDefault();
-        const v = Object.fromEntries(new FormData(ev.currentTarget).entries());
-        if (!Val.nonEmpty(v.studentName)){ setStatus('נא למלא שם תלמיד/ה'); return; }
-        if (token !== State.token) return;
-        State.data.studentName = v.studentName;
-        push(() => { clear(); Chat.askStudentName(); });
-        typing(true);
-        setTimeout(()=>{ typing(false); clear(); Chat.askFreeMessage(); }, 200);
-      }, { once:true });
-    },
-
-    async askFreeMessage(){
-      const token = ++State.token;
-      bubble('רוצים לצרף הערות למזכירות? (לא חובה) 👨‍🚀');
-      const html = `
-        <form class="bubble user" id="notesForm">
-          <div class="field">
-            <label for="f_notes">הערות</label>
-            <textarea id="f_notes" name="notes" rows="3" placeholder="העדפות, רקע, קשיים, או כל דבר שרלוונטי"></textarea>
-          </div>
-          <div class="row">
-            <button class="btn" type="button" id="skipNotes">דלג</button>
-            <button class="btn primary" type="submit">המשך</button>
-          </div>
-        </form>`;
-      area.insertAdjacentHTML('beforeend', html);
-      autoscroll();
-
-      const form = document.getElementById('notesForm');
-      document.getElementById('skipNotes').onclick = ()=> done('');
-      form.addEventListener('submit', (ev)=>{
-        ev.preventDefault();
-        const v = Object.fromEntries(new FormData(form).entries());
-        done(v.notes||'');
-      }, { once:true });
-
-      function done(notes){
-        if (token !== State.token) return;
-        State.data.notes = notes;
-        push(() => { clear(); Chat.askFreeMessage(); });
-        typing(true);
-        setTimeout(()=>{ typing(false); clear(); Chat.summary(); }, 200);
+      function addSlot(){
+        const date = dateEl.value;
+        const time = timeEl.value;
+        if (!Val.date(date)) return inlineError('בחר/י תאריך תקין', dateEl);
+        if (!Val.time(time) && !times.includes(time)) return inlineError('בחר/י שעה תקינה', timeEl);
+        if (minToday && date < new Date().toISOString().slice(0,10)) return inlineError('בחר/י תאריך עתידי', dateEl);
+        slots.push({ date, time, label: `${date} ${time}` });
+        form.reset(); redraw();
       }
-    },
 
-    async summary(){
-      const d = State.data;
-      const rows = [
-        ['שם פרטי', d.firstName],
-        ['שם משפחה', d.lastName],
-        ['טלפון', d.phone],
-        ['מקצוע', d.subject],
-        ['כיתה', d.grade],
-        ...(d.units ? [['יחידות', d.units]] : []),
-        ['תעריף', d.rate],
-        ['תלמיד/ה', d.studentName],
-        ['מועדים', (d.slots||[]).map(s=>`${s.date} ${s.from}-${s.to}`).join(' | ')],
-        ...(d.notes ? [['הערות', d.notes]] : []),
-      ];
-      const html = `
-        <div class="bubble bot">
-          <strong>סיכום בקשה 👨‍🚀</strong>
-          <div class="meta">אנא אשרו לפני שליחה</div>
-        </div>
-        <div class="bubble user" id="sum">
-          <div class="summary">
-            ${rows.map(([k,v]) => `<div><strong>${k}:</strong> ${v||'-'}</div>`).join('')}
-          </div>
-          <div class="row" style="margin-top:10px">
-            <button class="btn" id="edit">חזרה לתיקונים</button>
-            <button class="btn primary" id="send">שליחה</button>
-          </div>
-        </div>`;
-      clear();
-      area.insertAdjacentHTML('beforeend', html);
-      autoscroll();
-
-      document.getElementById('edit').onclick = ()=> goBack();
-
-      const sendBtn = document.getElementById('send');
-      let sending = false;
-
-      sendBtn.onclick = async ()=>{
-        if (sending) return;
-        sending = true;
-        sendBtn.disabled = true;
-        try {
-          setStatus('שולח ל־Google Sheets…');
-          const payload = {
-            flow: 'boost',
-            createdAt: new Date().toISOString(),
-            project: (window.APP_CONFIG||{}).PROJECT || 'Houston',
-            ...State.data,
-          };
-          const res = await sendLeadToSheet(payload);
-          setStatus('נשלח בהצלחה');
-          bubble(`<div class="notice success">הבקשה נקלטה! נחזור אליכם בהקדם.</div>`);
-        } catch (err){
-          setStatus('שגיאה בשליחה');
-          bubble(`<div class="notice danger">לא הצלחנו לשלוח כרגע: ${err.message}</div>`);
-          console.error(err);
-          sendBtn.disabled = false;
-          sending = false;
-        }
+      document.getElementById('ads_add').onclick = addSlot;
+      document.getElementById('ads_clear').onclick = ()=>{ slots.length = 0; redraw(); };
+      if (allowBack) document.getElementById('ads_back').onclick = ()=> goBack();
+      document.getElementById('ads_next').onclick = ()=>{
+        if (requireAtLeast > 0 && slots.length < requireAtLeast) return inlineError('נדרש לפחות מועד אחד');
+        if (token !== State.token) return;
+        push(()=>{ clear(); askDateTimeSlots({ titleHtml, dateLabel, timeLabel, minToday, requireAtLeast, times, continueText, allowBack }); });
+        resolve({ slots });
       };
+    });
+  }
 
-      push(() => { clear(); Chat.summary(); });
-    },
-
-    // Flow runner
-    runFlow: async (fn) => {
-      clear();
-      setStatus('מוכן');
-      await fn();
-    }
+  // ===== Public API =====
+  const Chat = {
+    // state
+    State,
+    // core
+    clear, autoscroll, setStatus, bubble, botText, botHTML, userBubble, typing, push, goBack, last,
+    // ui extras
+    button, chip, summaryCard, inlineError, showProcessing,
+    // validators
+    Val,
+    // builders (גם נחשפים גלובלית לנוחות בזרימות)
+    fieldRow, selectRow, chipRow, onChips, getChipValues,
+    // api
+    sendLeadToSheet,
+    // prompts
+    askContact, askFreeMessage, askDateTimeSlots,
   };
 
+  // נחשוף גם כעזרי גלובל לחלוקה בקבצי זרימה
   window.Chat = Chat;
+  window.fieldRow = fieldRow;
+  window.selectRow = selectRow;
+  window.chipRow = chipRow;
+  window.onChips = onChips;
 })();
