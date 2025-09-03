@@ -1,5 +1,6 @@
 <!-- /public/branches/branch3/makeup.html
-     זרימת "שיעור השלמה (Makeup)". טוען chat-core (ללא אוטו-ראן) ואת הזרימה, ומריץ רק Makeup. -->
+     דף "שיעור השלמה (Makeup)" כוויזארד: לכל שלב מסך משלו + כפתור חזרה.
+     משתמש ב-styles.light.css לעיצוב, וב-chat-core.js רק בשביל ולידציה ושליחה ל-Google Sheets. -->
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -8,37 +9,52 @@
   <title>יוסטון 👨‍🚀 – שיעור השלמה (Makeup)</title>
   <meta name="theme-color" content="#5b7cfa" />
   <link rel="stylesheet" href="../../styles.light.css?v=2" />
-  <style>#area{ overflow-y:auto; max-height:70vh; scroll-behavior:smooth }</style>
+  <style>
+    /* מיקרו-עיצוב למסכי הוויזארד */
+    .wizard-wrap{ max-width:720px; margin:0 auto }
+    .wizard-step{ padding:18px 22px 24px }
+    .wizard-actions{ display:flex; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap }
+    .title-row{ display:flex; align-items:center; justify-content:space-between; gap:10px }
+    .slot-list{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px }
+    .chip.del{ cursor:pointer }
+    .muted{ color:var(--muted) }
+  </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="card">
+    <section class="card wizard-wrap">
+
+      <!-- טופ־בר -->
       <div class="topbar" style="padding:12px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(255,255,255,.45),rgba(255,255,255,.2));backdrop-filter: blur(6px);display:flex;gap:8px;justify-content:space-between;align-items:center">
         <div class="right" style="display:flex;gap:8px;align-items:center">
-          <button class="btn" onclick="location.href='index.html'">תפריט מנוי/ה</button>
-          <button class="btn" onclick="location.href='../../index.html'">לתפריט ראשי</button>
+          <button class="btn" id="backBtn" disabled>חזרה</button>
         </div>
         <div class="left" style="display:flex;gap:8px;align-items:center">
-          <a id="faqBtn" class="btn ghost" href="../../faq.html" target="_blank" rel="noopener">יש לי שאלות</a>
+          <button class="btn ghost" onclick="location.href='index.html'">תפריט מנוי/ה</button>
+          <button class="btn ghost" onclick="location.href='../../index.html'">לתפריט ראשי</button>
         </div>
       </div>
 
+      <!-- כותרת -->
       <div class="head">
         <div class="brand">
           <div class="logo" aria-hidden="true">HB</div>
-          <div class="title">שיעור השלמה (Makeup)</div>
-          <p class="subtitle">נארגן את ההשלמה יחד, צעד־צעד</p>
+          <div>
+            <div class="title">שיעור השלמה (Makeup)</div>
+            <p class="subtitle">נזין כמה פרטים קצרים ונשלח למזכירות</p>
+          </div>
         </div>
       </div>
 
-      <div class="body chat-body" id="area" role="log" aria-live="polite" aria-atomic="false"></div>
+      <!-- תוכן הוויזארד -->
+      <div class="wizard-step body" id="step"></div>
 
+      <!-- פוטר סטטוס -->
       <div class="footerbar">
-        <button id="backBtn" class="btn" disabled>חזרה</button>
-        <span class="spacer"></span>
-        <span id="statusBox" class="status" aria-live="polite"></span>
+        <span id="statusBox" class="muted" aria-live="polite"></span>
       </div>
-    </div>
+
+    </section>
   </div>
 
   <!-- קונפיג (Webhook + Project) -->
@@ -47,32 +63,16 @@
       SHEET_API_URL: 'https://script.google.com/macros/s/AKfycbxRiJ_uMNpIJru-nNClAi787sA07hQSu7TX4cQEAm3_w3-dO2Hmp39ISxh81SqudA/exec',
       PROJECT: 'Houston'
     };
-    (function setHelpContext(ctx){
-      const btn = document.getElementById('faqBtn');
-      if(!btn) return;
-      const base='../../faq.html';
-      btn.href = ctx ? `${base}?ctx=${encodeURIComponent(ctx)}` : base;
-    })('branch3-makeup');
-    console.info('[makeup.html] loaded');
   </script>
 
-  <!-- קבצי ליבה (ללא אוטו-ראן) -->
-  <script src="../js/chat-core.js?v=4"></script>
+  <!-- נטען את chat-core בשביל ולידציה ושליחה בלבד -->
+  <script src="../js/chat-core.js?v=3"></script>
 
-  <!-- זרימת Makeup בלבד -->
-  <script src="../js/flows/makeup.js?v=3"></script>
+  <!-- הזרימה עצמה (וויזארד, לא צ'אט) -->
+  <script src="../js/flows/makeup.js?v=2"></script>
   <script>
-    window.addEventListener('DOMContentLoaded', () => {
-      const backBtn = document.getElementById('backBtn');
-      if (backBtn) backBtn.onclick = () => window.Chat?.goBack?.();
-
-      if (window.Flows?.Makeup?.run) {
-        console.info('[makeup] run()');
-        window.Flows.Makeup.run();
-      } else {
-        console.error('[makeup] Flows.Makeup.run not found');
-      }
-    });
+    // הפעלה
+    window.addEventListener('DOMContentLoaded', () => window.MakeupWizard?.start?.());
   </script>
 </body>
 </html>
