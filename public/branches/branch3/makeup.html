@@ -1,0 +1,81 @@
+<!-- /branches/branch3/makeup.html
+     דף זרימה: "שיעור השלמה" למנויים. משתמש ב-CSS הגלובלי וב-Chat Core הקיים. 
+     מגדיר APP_CONFIG (Webhook + Project), טוען את ה-Flow ומפעיל אותו. -->
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>יוסטון 👨‍🚀 – שיעור השלמה (Makeup)</title>
+  <meta name="theme-color" content="#5b7cfa" />
+  <link rel="stylesheet" href="../../styles.light.css?v=2" />
+  <style>
+    #area{ overflow-y:auto; max-height:70vh; scroll-behavior:smooth }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+
+      <!-- טופ-בר ניווט מהיר -->
+      <div class="topbar" style="padding:12px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(255,255,255,.45),rgba(255,255,255,.2));backdrop-filter: blur(6px);display:flex;gap:8px;justify-content:space-between;align-items:center">
+        <div class="right" style="display:flex;gap:8px;align-items:center">
+          <button class="btn" onclick="location.href='index.html'">תפריט מנוי/ה</button>
+          <button class="btn" onclick="location.href='../../index.html'">לתפריט ראשי</button>
+        </div>
+        <div class="left" style="display:flex;gap:8px;align-items:center">
+          <a id="faqBtn" class="btn ghost" href="../../faq.html" target="_blank" rel="noopener">יש לי שאלות</a>
+        </div>
+      </div>
+
+      <!-- כותרת -->
+      <div class="head">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">HB</div>
+          <div class="title">שיעור השלמה (Makeup)</div>
+          <p class="subtitle">נארגן את ההשלמה יחד, צעד־צעד</p>
+        </div>
+      </div>
+
+      <!-- אזור הצ’אט -->
+      <div class="body chat-body" id="area" role="log" aria-live="polite" aria-atomic="false"></div>
+
+      <!-- פוטר עם כפתור חזרה -->
+      <div class="footerbar">
+        <button id="backBtn" class="btn" disabled>חזרה</button>
+        <span class="spacer"></span>
+        <span id="statusBox" class="status" aria-live="polite"></span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- קונפיג זרימה (Webhook + Project) -->
+  <script>
+    window.APP_CONFIG = {
+      SHEET_API_URL: 'https://script.google.com/macros/s/AKfycbxRiJ_uMNpIJru-nNClAi787sA07hQSu7TX4cQEAm3_w3-dO2Hmp39ISxh81SqudA/exec',
+      PROJECT: 'Houston'
+    };
+    (function setHelpContext(ctx){
+      const btn = document.getElementById('faqBtn');
+      if(!btn) return;
+      const base='../../faq.html';
+      btn.href = ctx ? `${base}?ctx=${encodeURIComponent(ctx)}` : base;
+    })('branch3-makeup');
+  </script>
+
+  <!-- קבצי ליבה קיימים -->
+  <script src="../js/chat-core.js?v=3"></script>
+
+  <!-- הזרימה הספציפית -->
+  <script src="../js/flows/makeup.js?v=1"></script>
+  <script>
+    // חזרת היסטוריה
+    const backBtn = document.getElementById('backBtn');
+    if (backBtn) backBtn.onclick = ()=> window.Chat?.goBack?.();
+
+    // הפעלה
+    (async ()=> { await window.Flows?.Makeup?.run?.(); })();
+  </script>
+</body>
+</html>
