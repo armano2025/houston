@@ -1,14 +1,14 @@
 /* /public/branches/js/flows/boost.js
-   וויזארד "שיעור תגבור (Boost)" – ללא צ'אט:
-   לוגיקה "הורה/תלמיד", עד 3 פריטים למסך, טווחי שעות קבועים, תעריף עם תיאור, שליחה ל-GAS ב-text/plain.
+   ויזארד "שיעור תגבור (Boost)" – ללא צ'אט.
+   עדכון: תיקון שליחה עמיד ל-GAS (ללא preflight + תמיכה ב-opaque/טקסט), והפרדת שלב "תעריף" משלב "הערות".
    שלבים:
    1) פרטי קשר — אני: תלמיד/הורה, שם פרטי, שם משפחה, טלפון
-   2) אם הורה: שם פרטי התלמיד + שם משפחה התלמיד
-      אם תלמיד: מקצוע + מסלול לימוד (קבוצתי/טריפל/פרטי)
+   2) אם הורה: שם פרטי/משפחה של התלמיד | אם תלמיד: מקצוע + מסלול (קבוצתי/טריפל/פרטי)
    3) כיתה / יחידות אם צריך (י׳/י״א/י״ב) / שם המורה (רשות)
    4) זמינות — תאריך + טווח שעות (13–16 / 16–19 / 19–21), ניתן להוסיף כמה מועדים
-   5) הערות ותעריף — הערות (רשות) + בחירת תעריף (קבוצתי 70₪ / זוגי 90₪ / פרטי 160₪)
-   6) סיכום ושליחה — status תמיד "לטיפול". */
+   5) תעריף — "איזה מסלול תרצה/תרצי?"
+   6) הערות — (רשות)
+   7) סיכום ושליחה — status תמיד "לטיפול". */
 
 window.BoostWizard = (() => {
   const el = (id) => document.getElementById(id);
@@ -34,18 +34,39 @@ window.BoostWizard = (() => {
   };
   backBtn.onclick = goBack;
 
-  // ולידציה + שליחה מתוך chat-core
+  // ולידציה
   const Val = (window.Chat && window.Chat.Val) ? window.Chat.Val : {
     nonEmpty: s => String(s??'').trim().length>0,
     phoneIL: s => /^0\d{1,2}\d{7}$/.test(String(s??'').replace(/\D/g,'')),
     date: s => /^\d{4}-\d{2}-\d{2}$/.test(s),
   };
-  const send = (payload) => (window.Chat?.sendLeadToSheet
-      ? window.Chat.sendLeadToSheet(payload)
-      : fetch((window.APP_CONFIG||{}).SHEET_API_URL, {
-          method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-          body: JSON.stringify(payload)
-        }).then(r=>r.json()));
+
+  // שליחה עמידה ל-GAS (ללא preflight + תמיכה ב-opaque/טקסט/JSON)
+  async function send(payload){
+    if (window.Chat?.sendLeadToSheet) return await window.Chat.sendLeadToSheet(payload);
+    const url = (window.APP_CONFIG||{}).SHEET_API_URL;
+    if (!url) throw new Error('SHEET_API_URL לא הוגדר');
+
+    const res = await fetch(url, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify(payload),
+      mode:'cors',
+      redirect:'follow',
+      keepalive:true
+    });
+
+    if (res.type === 'opaque') return { ok:true, opaque:true };
+    if (!res.ok){
+      const t = await res.text().catch(()=> '');
+      throw new Error(`HTTP ${res.status} ${res.statusText}${t?` — ${t.slice(0,140)}`:''}`);
+    }
+
+    // ננסה קודם JSON, ואם לא — טקסט
+    const raw = await res.text();
+    try { return JSON.parse(raw); } catch(e){}
+    return (/ok/i.test(raw) ? { ok:true, raw } : { ok:false, raw });
+  }
 
   /* עזרי UI קצרים */
   const fieldRow = ({label, name, type='text', placeholder='', value='', required=false}) => {
@@ -93,7 +114,7 @@ window.BoostWizard = (() => {
 
   /* ===== שלבים ===== */
 
-  // מסך 1 — שיעור תגבור 👨‍🚀
+  // 1) פרטי קשר
   function step1_contact(){
     stepEl.innerHTML = `
       <div class="title-row"><h3>שיעור תגבור 👨‍🚀</h3></div>
@@ -111,7 +132,7 @@ window.BoostWizard = (() => {
 
     const getRole = bindSingleChips('chips_role');
     el('next').onclick = ()=>{
-      const role = getRole(); // 'תלמיד' / 'הורה'
+      const role = getRole();
       const firstName = el('f_firstName').value.trim();
       const lastName  = el('f_lastName').value.trim();
       const phone     = el('f_phone').value.replace(/[^\d]/g,'');
@@ -125,14 +146,13 @@ window.BoostWizard = (() => {
     };
   }
 
-  // מסך 2 — פיצול לוגיקה לפי “תלמיד/הורה”
+  // 2) פיצול: הורה (פרטי תלמיד) / תלמיד (מקצוע+מסלול)
   function step2_branch(){
     const role = State.data.contactRole;
 
-    // אם הורה – מבקשים רק פרטי תלמיד (שם פרטי + שם משפחה)
     if (role === 'הורה'){
       stepEl.innerHTML = `
-        <div class="title-row"><h3>פרטי תלמיד/ה 👨‍🚀</h3><div class="muted">שלב 2/6</div></div>
+        <div class="title-row"><h3>פרטי תלמיד/ה 👨‍🚀</h3><div class="muted">שלב 2/7</div></div>
         ${fieldRow({label:'שם פרטי התלמיד/ה',  name:'studentFirst', placeholder:'לדוגמה: נועה', required:true})}
         ${fieldRow({label:'שם משפחה התלמיד/ה', name:'studentLast',  placeholder:'לדוגמה: כהן', required:true})}
         <div class="wizard-actions">
@@ -154,9 +174,8 @@ window.BoostWizard = (() => {
       return;
     }
 
-    // אם תלמיד – מבקשים מקצוע + מסלול
     stepEl.innerHTML = `
-      <div class="title-row"><h3>פרטי מסלול 👨‍🚀</h3><div class="muted">שלב 2/6</div></div>
+      <div class="title-row"><h3>פרטי מסלול 👨‍🚀</h3><div class="muted">שלב 2/7</div></div>
       ${selectRow({label:'מקצוע', name:'subject', options:['מתמטיקה','אנגלית','פיזיקה','שפה','הוראה מתקנת','אנגלית מדוברת'], required:true})}
       ${chipsRow({label:'מסלול לימוד', name:'track', options:['קבוצתי','טריפל','פרטי']})}
       <div class="wizard-actions">
@@ -173,7 +192,6 @@ window.BoostWizard = (() => {
       if(!Val.nonEmpty(subject)) return setStatus('נא לבחור מקצוע');
       if(!Val.nonEmpty(track))   return setStatus('נא לבחור מסלול לימוד');
       setStatus('');
-      // כשהתלמיד ממלא – הוא גם התלמיד
       Object.assign(State.data, {
         subject, track,
         studentFirst: State.data.firstName,
@@ -183,10 +201,10 @@ window.BoostWizard = (() => {
     };
   }
 
-  // מסך 3 — כיתה / יחידות (אם צריך) / שם המורה (רשות)
+  // 3) כיתה / יחידות (אם צריך) / מורה (רשות)
   function step3_gradeUnitsTeacher(){
     stepEl.innerHTML = `
-      <div class="title-row"><h3>כיתה, יחידות, מורה 👨‍🚀</h3><div class="muted">שלב 3/6</div></div>
+      <div class="title-row"><h3>כיתה, יחידות, מורה 👨‍🚀</h3><div class="muted">שלב 3/7</div></div>
       ${selectRow({label:'כיתה', name:'grade', options:['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ז׳','ח׳','ט׳','י׳','י״א','י״ב','סטודנט'], required:true})}
       <div id="unitsWrap" style="display:none">
         ${chipsRow({label:'יחידות (לכיתות י/י״א/י״ב)', name:'units', options:['3','4','5']})}
@@ -223,14 +241,14 @@ window.BoostWizard = (() => {
     };
   }
 
-  // מסך 4 — זמינות (תאריך + טווח שעות; ניתן להוסיף כמה)
+  // 4) זמינות (תאריך + טווח שעות; אפשר כמה)
   function step4_availability(){
     const optHtml = ['<option value="">— בחרו טווח —</option>']
       .concat(RANGES.map((r,i)=>`<option value="${i}">${r.label}</option>`)).join('');
     const chosen = State.data.slots || [];
 
     stepEl.innerHTML = `
-      <div class="title-row"><h3>זמינות לשיעור 👨‍🚀</h3><div class="muted">שלב 4/6</div></div>
+      <div class="title-row"><h3>זמינות לשיעור 👨‍🚀</h3><div class="muted">שלב 4/7</div></div>
       ${fieldRow({label:'תאריך', name:'slotDate', type:'date', required:false})}
       <div class="field">
         <label for="f_slotRange">טווח שעות</label>
@@ -285,18 +303,15 @@ window.BoostWizard = (() => {
       if(!chosen.length) return setStatus('הוסיפו לפחות מועד אחד');
       State.data.slots = chosen.slice();
       setStatus('');
-      step5_notes_rate();
+      step5_rate();
     };
   }
 
-  // מסך 5 — הערות + תעריף
-  function step5_notes_rate(){
+  // 5) תעריף — שאלה מפורשת
+  function step5_rate(){
     stepEl.innerHTML = `
-      <div class="title-row"><h3>הערות ותעריף 👨‍🚀</h3><div class="muted">שלב 5/6</div></div>
-      <div class="field">
-        <label for="f_notes">הערות (רשות)</label>
-        <textarea id="f_notes" rows="3" placeholder="העדפות, אילוצים, פרטים שיעזרו לנו"></textarea>
-      </div>
+      <div class="title-row"><h3>בחירת מסלול/תעריף 👨‍🚀</h3><div class="muted">שלב 5/7</div></div>
+      <p>איזה מסלול תרצה/תרצי?</p>
       ${chipsRow({label:'תעריף', name:'rate', options:[
         'מסלול קבוצתי 70₪','מסלול זוגי 90₪','מסלול פרטי 160₪'
       ]})}
@@ -304,24 +319,43 @@ window.BoostWizard = (() => {
         <button class="btn" id="prev">חזרה</button>
         <button class="btn primary" id="next">המשך</button>
       </div>`;
-    push(step5_notes_rate);
+    push(step5_rate);
 
     const getRate = bindSingleChips('chips_rate');
 
     el('prev').onclick = goBack;
     el('next').onclick = ()=>{
-      const notes = (el('f_notes').value||'').trim();
       const rate  = getRate();
       if(!Val.nonEmpty(rate)) return setStatus('נא לבחור תעריף');
       setStatus('');
-      Object.assign(State.data, { notes, rate });
-      step6_summary();
+      Object.assign(State.data, { rate });
+      step6_notes();
     };
   }
 
-  // מסך 6 — סיכום ושליחה
-  function step6_summary(){
-    // אם תלמיד מילא — כבר שמרנו studentFirst/Last. אם הורה, נלקח ממסך 2.
+  // 6) הערות — רשות
+  function step6_notes(){
+    stepEl.innerHTML = `
+      <div class="title-row"><h3>הערות למזכירות (רשות) 👨‍🚀</h3><div class="muted">שלב 6/7</div></div>
+      <div class="field">
+        <label for="f_notes">הערות</label>
+        <textarea id="f_notes" rows="3" placeholder="העדפות, אילוצים, פרטים שיעזרו לנו"></textarea>
+      </div>
+      <div class="wizard-actions">
+        <button class="btn" id="prev">חזרה</button>
+        <button class="btn primary" id="next">המשך</button>
+      </div>`;
+    push(step6_notes);
+
+    el('prev').onclick = goBack;
+    el('next').onclick = ()=>{
+      State.data.notes = (el('f_notes').value||'').trim();
+      step7_summary();
+    };
+  }
+
+  // 7) סיכום ושליחה
+  function step7_summary(){
     const d = State.data;
     const rows = [
       ['מי ממלא', d.contactRole],
@@ -334,18 +368,18 @@ window.BoostWizard = (() => {
       ...(d.units ? [['יחידות', d.units]]:[]),
       ...(d.teacher ? [['שם המורה', d.teacher]]:[]),
       ['מועדים שנבחרו', (d.slots||[]).map(s=>`${s.date} ${s.from}-${s.to}`).join(' | ')],
-      ...(d.notes ? [['הערות', d.notes]]:[]),
-      ['תעריף', d.rate||'']
+      ['תעריף', d.rate||''],
+      ...(d.notes ? [['הערות', d.notes]]:[])
     ];
 
     stepEl.innerHTML = `
-      <div class="title-row"><h3>סיכום ושליחה 👨‍🚀</h3><div class="muted">שלב 6/6</div></div>
+      <div class="title-row"><h3>סיכום ושליחה 👨‍🚀</h3><div class="muted">שלב 7/7</div></div>
       <div class="summary">${rows.map(([k,v])=>`<div><strong>${k}:</strong> ${v||'-'}</div>`).join('')}</div>
       <div class="wizard-actions">
         <button class="btn" id="prev">חזרה</button>
         <button class="btn primary" id="send">אישור ושליחה למזכירות 📤</button>
       </div>`;
-    push(step6_summary);
+    push(step7_summary);
 
     el('prev').onclick = goBack;
     el('send').onclick = submit;
@@ -353,7 +387,6 @@ window.BoostWizard = (() => {
 
   async function submit(){
     const d = State.data, errs=[];
-    // מינימום הכרחי לפי הזרימה
     if(!Val.nonEmpty(d.contactRole)) errs.push('role');
     if(!Val.nonEmpty(d.firstName))   errs.push('firstName');
     if(!Val.nonEmpty(d.lastName))    errs.push('lastName');
@@ -362,17 +395,15 @@ window.BoostWizard = (() => {
     if(d.contactRole === 'הורה'){
       if(!Val.nonEmpty(d.studentFirst)) errs.push('studentFirst');
       if(!Val.nonEmpty(d.studentLast))  errs.push('studentLast');
-      // subject/track אינם נדרשים במקרה הורה לפי האפיון
     } else {
       if(!Val.nonEmpty(d.subject)) errs.push('subject');
       if(!Val.nonEmpty(d.track))   errs.push('track');
-      if(!Val.nonEmpty(d.studentFirst)) errs.push('studentFirst'); // מולא אוטומטית מהיוזר
+      if(!Val.nonEmpty(d.studentFirst)) errs.push('studentFirst');
       if(!Val.nonEmpty(d.studentLast))  errs.push('studentLast');
     }
 
     if(!Val.nonEmpty(d.grade)) errs.push('grade');
     if(['י׳','י״א','י״ב'].includes(d.grade||'') && !Val.nonEmpty(d.units)) errs.push('units');
-
     if(!Array.isArray(d.slots) || !d.slots.length) errs.push('slots');
     if(!Val.nonEmpty(d.rate)) errs.push('rate');
 
@@ -410,7 +441,8 @@ window.BoostWizard = (() => {
         backBtn.disabled = true;
         State.stack = [stepEl.innerHTML];
       }else{
-        throw new Error((res && res.error) || 'server_error');
+        // אם קיבלנו טקסט בלי ok מפורש
+        throw new Error(res && res.raw ? res.raw : 'server_error');
       }
     }catch(err){
       setStatus('שגיאה: ' + err.message);
