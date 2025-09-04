@@ -1,6 +1,6 @@
 <!-- /public/branches/branch1/boost.html
-     דף "שיעור תגבור (Boost)" כוויזארד: לכל שלב מסך משלו + כפתור חזרה.
-     משתמש ב-styles.light.css לעיצוב, וב-chat-core.js רק בשביל ולידציה ושליחה ל-Google Sheets. -->
+     דף ויזארד "שיעור תגבור (Boost)" – לכל שלב מסך משלו + כפתור חזרה.
+     טוען את chat-core לולידציה/שליחה, ואת הזרימה boost.js. -->
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -10,7 +10,6 @@
   <meta name="theme-color" content="#5b7cfa" />
   <link rel="stylesheet" href="../../styles.light.css?v=2" />
   <style>
-    /* מיקרו-עיצוב למסכי הוויזארד */
     .wizard-wrap{ max-width:720px; margin:0 auto }
     .wizard-step{ padding:18px 22px 24px }
     .wizard-actions{ display:flex; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap }
@@ -65,13 +64,12 @@
     };
   </script>
 
-  <!-- נטען את chat-core בשביל ולידציה ושליחה בלבד -->
+  <!-- chat-core לולידציה/שליחה -->
   <script src="../js/chat-core.js?v=3"></script>
 
   <!-- הזרימה עצמה (וויזארד, לא צ'אט) -->
-  <script src="../js/flows/boost.js?v=1"></script>
+  <script src="../js/flows/boost.js?v=2"></script>
   <script>
-    // הפעלה
     window.addEventListener('DOMContentLoaded', () => window.BoostWizard?.start?.());
   </script>
 </body>
