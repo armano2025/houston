@@ -1,13 +1,14 @@
 /* /public/branches/js/flows/makeup.js
-   וויזארד "שיעור השלמה (Makeup)" – ללא צ'אט:
-   שלבים (עד 3 שדות במסך):
-   1) פרטי קשר — שם פרטי, שם משפחה, טלפון
-   2) פרטי שיעור — שם תלמיד/ה, מקצוע, מסלול
-   3) כיתה/יחידות/שם מורה — כיתה (+יחידות אם צריך), שם מורה
-   4) שיעור שהוחמץ — תאריך, שעה עגולה, סיבת ההחמצה
-   5) מועדים להשלמה — תאריך + טווח שעות מתוך: 13–16 / 16–19 / 19–21 (אפשר להוסיף כמה או לדלג)
-   6) הערות (רשות)
-   7) סיכום ושליחה.  השדה status תמיד "לטיפול".  שליחה ב-text/plain ל-GAS (ללא preflight). */
+   וויזארד "שיעור השלמה (Makeup)" – ללא צ'אט, מותאם לרעיון המשולב (תלמיד/הורה):
+   שלבים (עד ~3 שדות במסך):
+   1) זיהוי + פרטי קשר — אני תלמיד/הורה (צ'יפים), שם פרטי, שם משפחה, טלפון
+   2) (מותנה) פרטי תלמיד — אם "אני הורה": שם פרטי תלמיד, שם משפחה תלמיד
+   3) פרטי שיעור (בסיס) — מקצוע, מסלול (וציון מזכיר: נבקש מורה/כיתה בשלב הבא)
+   4) כיתה/יחידות/מורה — כיתה (+יחידות אם צריך), שם מורה
+   5) שיעור שהוחמץ — תאריך, שעה עגולה 08:00–22:00, סיבת החמצה
+   6) מועדי השלמה — תאריך + טווח קבוע: 13–16 / 16–19 / 19–21 (הוסף/דלג)
+   7) הערות (רשות)
+   8) סיכום ושליחה.  status תמיד "לטיפול". שליחה ב-text/plain ל-GAS. */
 
 window.MakeupWizard = (() => {
   const el = (id) => document.getElementById(id);
@@ -34,7 +35,7 @@ window.MakeupWizard = (() => {
   };
   backBtn.onclick = goBack;
 
-  // קיצור לולידציה ושילוח מתוך chat-core
+  // ולידציה ושליחה (מ-chat-core אם נטען)
   const Val = (window.Chat && window.Chat.Val) ? window.Chat.Val : {
     nonEmpty: s => String(s??'').trim().length>0,
     phoneIL: s => /^0\d{1,2}\d{7}$/.test(String(s??'').replace(/\D/g,'')),
@@ -93,61 +94,139 @@ window.MakeupWizard = (() => {
   };
 
   /* ===== שלבים ===== */
-  function step1_contact(){
+
+  // 1) זיהוי + פרטי קשר: אני (תלמיד/הורה) + שם פרטי + שם משפחה + טלפון
+  function step1_identity(){
     stepEl.innerHTML = `
-      <div class="title-row"><h3>פרטי קשר</h3></div>
+      <div class="title-row">
+        <h3>עזרה בתיאום שיעור שהתפספס 👨‍🚀</h3>
+      </div>
+      <p class="muted">כדי שאוכל לדייק את הבקשה, נזין כמה פרטים קצרים ואני אשלח למזכירות 🧑‍🚀</p>
+
+      ${chipsRow({label:'מי ממלא את הטופס?', name:'role', options:['אני תלמיד','אני הורה']})}
       ${fieldRow({label:'שם פרטי',  name:'firstName', placeholder:'לדוגמה: חן', required:true})}
       ${fieldRow({label:'שם משפחה', name:'lastName',  placeholder:'לדוגמה: בראונשטיין', required:true})}
       ${fieldRow({label:'טלפון',     name:'phone',     placeholder:'05XXXXXXXX', type:'tel', required:true})}
+
       <div class="wizard-actions">
         <button class="btn primary" id="next">המשך</button>
       </div>`;
-    push(step1_contact);
+    push(step1_identity);
 
+    const getRole = bindSingleChips('chips_role');
     el('next').onclick = ()=>{
+      const roleRaw   = getRole(); // 'אני תלמיד' / 'אני הורה'
+      const role      = roleRaw === 'אני הורה' ? 'parent' : (roleRaw === 'אני תלמיד' ? 'student' : '');
       const firstName = el('f_firstName').value.trim();
       const lastName  = el('f_lastName').value.trim();
       const phone     = el('f_phone').value.replace(/[^\d]/g,'');
+
+      if(!role)                 return setStatus('נא לבחור: אני תלמיד / אני הורה');
       if(!Val.nonEmpty(firstName)) return setStatus('נא למלא שם פרטי');
       if(!Val.nonEmpty(lastName))  return setStatus('נא למלא שם משפחה');
       if(!Val.phoneIL(phone))      return setStatus('טלפון לא תקין');
+
       setStatus('');
-      Object.assign(State.data, { firstName, lastName, phone });
-      step2_lessonBasics();
+      Object.assign(State.data, { role, firstName, lastName, phone });
+      (role === 'parent') ? step2_studentNames() : step3_lessonBasics_asStudent();
     };
   }
 
-  function step2_lessonBasics(){
-    const subjects = ['מתמטיקה','אנגלית','פיזיקה','שפה','הוראה מתקנת','אנגלית מדוברת'];
+  // 2) (מותנה) פרטי תלמיד – אם הורה: שם פרטי תלמיד + שם משפחה תלמיד
+  function step2_studentNames(){
+    const fname = (State.data.firstName||'').trim();
     stepEl.innerHTML = `
-      <div class="title-row"><h3>פרטי שיעור</h3><div class="muted">שלב 2/7</div></div>
-      ${fieldRow({label:'שם התלמיד/ה', name:'studentName', placeholder:'לדוגמה: נועה כהן', required:true})}
+      <div class="title-row">
+        <h3>תודה ${fname}, נמשיך לפרטי המנוי 🧑‍🚀</h3>
+        <div class="muted">שלב 2/8</div>
+      </div>
+      ${fieldRow({label:'שם פרטי תלמיד/ה',  name:'studentFirst', placeholder:'לדוגמה: נועה', required:true})}
+      ${fieldRow({label:'שם משפחה תלמיד/ה', name:'studentLast',  placeholder:'לדוגמה: כהן', required:true})}
+      <div class="wizard-actions">
+        <button class="btn" id="prev">חזרה</button>
+        <button class="btn primary" id="next">המשך</button>
+      </div>`;
+    push(step2_studentNames);
+
+    el('prev').onclick = goBack;
+    el('next').onclick = ()=>{
+      const studentFirst = el('f_studentFirst').value.trim();
+      const studentLast  = el('f_studentLast').value.trim();
+      if(!Val.nonEmpty(studentFirst)) return setStatus('נא למלא שם פרטי תלמיד/ה');
+      if(!Val.nonEmpty(studentLast))  return setStatus('נא למלא שם משפחה תלמיד/ה');
+      setStatus('');
+      State.data.studentName = `${studentFirst} ${studentLast}`.trim();
+      step3_lessonBasics_parent();
+    };
+  }
+
+  // 3A) פרטי שיעור (אם הורה כבר נתן שם תלמיד) — מקצוע + מסלול
+  function step3_lessonBasics_parent(){
+    const subjects = ['מתמטיקה','אנגלית','פיזיקה','שפה','הוראה מתקנת','אנגלית מדוברת'];
+    const fname = (State.data.firstName||'').trim();
+    const sname = (State.data.studentName||'תלמיד/ה');
+    stepEl.innerHTML = `
+      <div class="title-row">
+        <h3>תודה ${fname} 🧑‍🚀</h3>
+        <div class="muted">שלב 3/8</div>
+      </div>
+      <p class="muted">אני צריך עוד קצת פרטים על ${sname}:</p>
       ${selectRow({label:'מקצוע', name:'subject', options:subjects, required:true})}
       ${chipsRow({label:'מסלול למידה', name:'track', options:['קבוצתי','טריפל','פרטי']})}
       <div class="wizard-actions">
         <button class="btn" id="prev">חזרה</button>
         <button class="btn primary" id="next">המשך</button>
       </div>`;
-    push(step2_lessonBasics);
+    push(step3_lessonBasics_parent);
 
     const getTrack = bindSingleChips('chips_track');
     el('prev').onclick = goBack;
     el('next').onclick = ()=>{
-      const studentName = el('f_studentName').value.trim();
-      const subject     = el('f_subject').value;
-      const track       = getTrack();
-      if(!Val.nonEmpty(studentName)) return setStatus('נא למלא שם תלמיד/ה');
-      if(!Val.nonEmpty(subject))     return setStatus('נא לבחור מקצוע');
+      const subject = el('f_subject').value;
+      const track   = getTrack();
+      if(!Val.nonEmpty(subject)) return setStatus('נא לבחור מקצוע');
       setStatus('');
-      Object.assign(State.data, { studentName, subject, track });
-      step3_gradeUnitsTeacher();
+      Object.assign(State.data, { subject, track });
+      step4_gradeUnitsTeacher();
     };
   }
 
-  function step3_gradeUnitsTeacher(){
+  // 3B) פרטי שיעור (אם תלמיד) — לא מבקשים שוב שם תלמיד, רק מקצוע + מסלול
+  function step3_lessonBasics_asStudent(){
+    const subjects = ['מתמטיקה','אנגלית','פיזיקה','שפה','הוראה מתקנת','אנגלית מדוברת'];
+    const fname = (State.data.firstName||'').trim();
+    State.data.studentName = `${State.data.firstName||''} ${State.data.lastName||''}`.trim();
+    stepEl.innerHTML = `
+      <div class="title-row">
+        <h3>בכיף ${fname}, אשמח לעזור לך לתאם שיעור השלמה 👨‍🚀</h3>
+        <div class="muted">שלב 2/8</div>
+      </div>
+      <p class="muted">נרשום כמה פרטים על השיעור ✏️</p>
+      ${selectRow({label:'מקצוע', name:'subject', options:subjects, required:true})}
+      ${chipsRow({label:'מסלול למידה', name:'track', options:['קבוצתי','טריפל','פרטי']})}
+      <div class="wizard-actions">
+        <button class="btn" id="prev">חזרה</button>
+        <button class="btn primary" id="next">המשך</button>
+      </div>`;
+    push(step3_lessonBasics_asStudent);
+
+    const getTrack = bindSingleChips('chips_track');
+    el('prev').onclick = goBack;
+    el('next').onclick = ()=>{
+      const subject = el('f_subject').value;
+      const track   = getTrack();
+      if(!Val.nonEmpty(subject)) return setStatus('נא לבחור מקצוע');
+      setStatus('');
+      Object.assign(State.data, { subject, track });
+      step4_gradeUnitsTeacher();
+    };
+  }
+
+  // 4) כיתה / יחידות (מותנה) / שם מורה
+  function step4_gradeUnitsTeacher(){
     const grades = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ז׳','ח׳','ט׳','י׳','י״א','י״ב','סטודנט'];
     stepEl.innerHTML = `
-      <div class="title-row"><h3>כיתה / יחידות / מורה</h3><div class="muted">שלב 3/7</div></div>
+      <div class="title-row"><h3>כיתה / יחידות / מורה</h3><div class="muted">שלב 4/8</div></div>
       ${selectRow({label:'כיתה', name:'grade', options:grades, required:true})}
       <div id="unitsWrap" style="display:none">
         ${chipsRow({label:'יחידות (לכיתות י/י״א/י״ב)', name:'units', options:['3','4','5']})}
@@ -157,7 +236,7 @@ window.MakeupWizard = (() => {
         <button class="btn" id="prev">חזרה</button>
         <button class="btn primary" id="next">המשך</button>
       </div>`;
-    push(step3_gradeUnitsTeacher);
+    push(step4_gradeUnitsTeacher);
 
     const gradeSel = el('f_grade');
     const unitsWrap = el('unitsWrap');
@@ -181,13 +260,14 @@ window.MakeupWizard = (() => {
       if(!Val.nonEmpty(teacher)) return setStatus('נא למלא שם מורה');
       setStatus('');
       Object.assign(State.data, { grade, units, teacher });
-      step4_missedLesson();
+      step5_missedLesson();
     };
   }
 
-  function step4_missedLesson(){
+  // 5) שיעור שהוחמץ — תאריך, שעה עגולה, סיבה
+  function step5_missedLesson(){
     stepEl.innerHTML = `
-      <div class="title-row"><h3>השיעור שהוחמץ</h3><div class="muted">שלב 4/7</div></div>
+      <div class="title-row"><h3>השיעור שהוחמץ</h3><div class="muted">שלב 5/8</div></div>
       ${fieldRow({label:'תאריך השיעור שהוחמץ', name:'missedDate', type:'date', required:true})}
       ${selectRow({label:'שעה (עגולה)', name:'missedTime', options:HOURS, required:true})}
       ${selectRow({label:'סיבת ההחמצה', name:'reason', options:['אנחנו ביטלנו','אתם ביטלתם'], required:true})}
@@ -195,7 +275,7 @@ window.MakeupWizard = (() => {
         <button class="btn" id="prev">חזרה</button>
         <button class="btn primary" id="next">המשך</button>
       </div>`;
-    push(step4_missedLesson);
+    push(step5_missedLesson);
 
     el('prev').onclick = goBack;
     el('next').onclick = ()=>{
@@ -207,17 +287,18 @@ window.MakeupWizard = (() => {
       if(!Val.nonEmpty(reason))          return setStatus('נא לבחור סיבה');
       setStatus('');
       Object.assign(State.data, { missedDate, missedTime, reason });
-      step5_desiredSlots();
+      step6_desiredSlots();
     };
   }
 
-  function step5_desiredSlots(){
+  // 6) מועדי השלמה — תאריך + טווח קבוע; הוסף/דלג
+  function step6_desiredSlots(){
     const optHtml = ['<option value="">— בחרו טווח —</option>']
       .concat(RANGES.map((r,i)=>`<option value="${i}">${r.label}</option>`)).join('');
     const chosen = State.data.slots || [];
 
     stepEl.innerHTML = `
-      <div class="title-row"><h3>מועדים נוחים להשלמה</h3><div class="muted">שלב 5/7</div></div>
+      <div class="title-row"><h3>מועדים נוחים להשלמה</h3><div class="muted">שלב 6/8</div></div>
       ${fieldRow({label:'תאריך', name:'slotDate', type:'date', required:false})}
       <div class="field">
         <label for="f_slotRange">טווח שעות</label>
@@ -241,7 +322,7 @@ window.MakeupWizard = (() => {
         <button class="btn" id="prev">חזרה</button>
         <button class="btn primary" id="next">המשך</button>
       </div>`;
-    push(step5_desiredSlots);
+    push(step6_desiredSlots);
 
     const listEl = el('list');
     const redraw = ()=>{
@@ -271,7 +352,7 @@ window.MakeupWizard = (() => {
       State.data.desiredPreference = 'אין העדפה';
       State.data.slots = [];
       setStatus('');
-      step6_notes();
+      step7_notes();
     };
 
     el('prev').onclick = goBack;
@@ -282,35 +363,39 @@ window.MakeupWizard = (() => {
       State.data.desiredPreference = 'יש העדפות';
       State.data.slots = chosen.slice();
       setStatus('');
-      step6_notes();
+      step7_notes();
     };
   }
 
-  function step6_notes(){
+  // 7) הערות (רשות)
+  function step7_notes(){
     stepEl.innerHTML = `
-      <div class="title-row"><h3>הערות למזכירות (רשות)</h3><div class="muted">שלב 6/7</div></div>
+      <div class="title-row"><h3>הערות למזכירות (רשות)</h3><div class="muted">שלב 7/8</div></div>
       <div class="field">
         <label for="f_notes">הערות</label>
-        <textarea id="f_notes" rows="3" placeholder="העדפות, אילוצים, פרטים שיעזרו לנו"></textarea>
+        <textarea id="f_notes" rows="3" placeholder="מורה מועדפ/ת, אילוצים, כל דבר שיעזור לנו"></textarea>
       </div>
       <div class="wizard-actions">
         <button class="btn" id="prev">חזרה</button>
         <button class="btn primary" id="next">המשך</button>
       </div>`;
-    push(step6_notes);
+    push(step7_notes);
 
     el('prev').onclick = goBack;
     el('next').onclick = ()=>{
       State.data.notes = (el('f_notes').value||'').trim();
-      step7_summary();
+      step8_summary();
     };
   }
 
-  function step7_summary(){
+  // 8) סיכום ושליחה
+  function step8_summary(){
     const d = State.data;
     const rows = [
+      ['מי ממלא', d.role==='parent'?'הורה':'תלמיד'],
       ['שם פרטי', d.firstName], ['שם משפחה', d.lastName], ['טלפון', d.phone],
-      ['שם התלמיד/ה', d.studentName], ['מקצוע', d.subject], ['מסלול', d.track||''],
+      ['שם התלמיד/ה', d.studentName],
+      ['מקצוע', d.subject], ['מסלול', d.track||''],
       ['כיתה', d.grade], ...(d.units ? [['יחידות', d.units]]:[]),
       ['שם המורה', d.teacher],
       ['שיעור שהוחמץ', `${d.missedDate} • ${d.missedTime}`],
@@ -319,24 +404,26 @@ window.MakeupWizard = (() => {
       ...(d.notes ? [['הערות', d.notes]]:[])
     ];
     stepEl.innerHTML = `
-      <div class="title-row"><h3>סיכום ושליחה</h3><div class="muted">שלב 7/7</div></div>
+      <div class="title-row"><h3>סיכום ושליחה</h3><div class="muted">שלב 8/8</div></div>
       <div class="summary">${rows.map(([k,v])=>`<div><strong>${k}:</strong> ${v||'-'}</div>`).join('')}</div>
       <div class="wizard-actions">
         <button class="btn" id="prev">חזרה</button>
         <button class="btn primary" id="send">אישור ושליחה למזכירות 📤</button>
       </div>`;
-    push(step7_summary);
+    push(step8_summary);
 
     el('prev').onclick = goBack;
     el('send').onclick = submit;
   }
 
   async function submit(){
-    // ולידציות אחרונות (הגיוניות)
+    // ולידציות אחרונות
     const d = State.data, errs=[];
+    if(!['student','parent'].includes(d.role||'')) errs.push('role');
     if(!Val.nonEmpty(d.firstName)) errs.push('firstName');
     if(!Val.nonEmpty(d.lastName))  errs.push('lastName');
     if(!Val.phoneIL(d.phone))      errs.push('phone');
+
     if(!Val.nonEmpty(d.studentName)) errs.push('studentName');
     if(!Val.nonEmpty(d.subject))     errs.push('subject');
     if(!Val.nonEmpty(d.grade))       errs.push('grade');
@@ -352,7 +439,8 @@ window.MakeupWizard = (() => {
       createdAt: new Date().toISOString(),
       project: (window.APP_CONFIG||{}).PROJECT || 'Houston',
       status: 'לטיפול',
-      // מזהה
+      role: d.role,                                  // 'student' / 'parent'
+      // מזדהה
       firstName: d.firstName, lastName: d.lastName, phone: d.phone,
       // פרטי שיעור
       studentName: d.studentName, subject: d.subject, track: d.track||'',
@@ -391,7 +479,7 @@ window.MakeupWizard = (() => {
     State.stack = [];
     backBtn.disabled = true;
     setStatus('');
-    step1_contact();
+    step1_identity();
   }
 
   return { start };
