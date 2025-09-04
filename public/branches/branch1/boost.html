@@ -1,54 +1,78 @@
+<!-- /public/branches/branch1/boost.html
+     דף "שיעור תגבור (Boost)" כוויזארד: לכל שלב מסך משלו + כפתור חזרה.
+     משתמש ב-styles.light.css לעיצוב, וב-chat-core.js רק בשביל ולידציה ושליחה ל-Google Sheets. -->
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>יוסטון 👨‍🚀 – שיעור תגבור (Boost)</title>
   <meta name="theme-color" content="#5b7cfa" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="../../styles.light.css?v=1" />
+  <link rel="stylesheet" href="../../styles.light.css?v=2" />
+  <style>
+    /* מיקרו-עיצוב למסכי הוויזארד */
+    .wizard-wrap{ max-width:720px; margin:0 auto }
+    .wizard-step{ padding:18px 22px 24px }
+    .wizard-actions{ display:flex; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap }
+    .title-row{ display:flex; align-items:center; justify-content:space-between; gap:10px }
+    .slot-list{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px }
+    .chip.del{ cursor:pointer }
+    .muted{ color:var(--muted) }
+  </style>
 </head>
 <body>
-  <main class="wrap">
-    <section class="card" role="application" aria-label="שיעור תגבור – אשף שלבים">
-      <div class="head">
-        <div class="brand">
+  <div class="wrap">
+    <section class="card wizard-wrap">
+
+      <!-- טופ־בר -->
+      <div class="topbar" style="padding:12px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(255,255,255,.45),rgba(255,255,255,.2));backdrop-filter: blur(6px);display:flex;gap:8px;justify-content:space-between;align-items:center">
+        <div class="right" style="display:flex;gap:8px;align-items:center">
+          <button class="btn" id="backBtn" disabled>חזרה</button>
+        </div>
+        <div class="left" style="display:flex;gap:8px;align-items:center">
+          <button class="btn ghost" onclick="location.href='../branch3/index.html'">תפריט מנוי/ה</button>
           <button class="btn ghost" onclick="location.href='../../index.html'">לתפריט ראשי</button>
-          <div class="logo" aria-hidden="true">HB</div>
-          <div class="title">שיעור תגבור (Boost)</div>
-          <p class="subtitle">בקשה לשיעור חד־פעמי לתלמיד/ה</p>
         </div>
       </div>
 
-      <div class="body" id="area" aria-live="polite" aria-atomic="false"></div>
-
-      <div class="footerbar">
-        <button id="backBtn" class="btn" disabled>חזרה</button>
-        <div class="meta" id="statusBox" role="status" aria-live="polite">מוכן</div>
+      <!-- כותרת -->
+      <div class="head">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">HB</div>
+          <div>
+            <div class="title">שיעור תגבור (Boost)</div>
+            <p class="subtitle">נזין כמה פרטים קצרים ונשלח למזכירות</p>
+          </div>
+        </div>
       </div>
-    </section>
-  </main>
 
-  <!-- קונפיגורציה גלובלית -->
+      <!-- תוכן הוויזארד -->
+      <div class="wizard-step body" id="step"></div>
+
+      <!-- פוטר סטטוס -->
+      <div class="footerbar">
+        <span id="statusBox" class="muted" aria-live="polite"></span>
+      </div>
+
+    </section>
+  </div>
+
+  <!-- קונפיג (Webhook + Project) -->
   <script>
     window.APP_CONFIG = {
-      SHEET_API_URL: "https://script.google.com/macros/s/AKfycbxRiJ_uMNpIJru-nNClAi787sA07hQSu7TX4cQEAm3_w3-dO2Hmp39ISxh81SqudA/exec",
-      PROJECT: "Houston",
-      VERSION: "2025.09.01-fix_api",
+      SHEET_API_URL: 'https://script.google.com/macros/s/AKfycbxRiJ_uMNpIJru-nNClAi787sA07hQSu7TX4cQEAm3_w3-dO2Hmp39ISxh81SqudA/exec',
+      PROJECT: 'Houston'
     };
-    // אופציונלי: שמירה ל-localStorage כדי להשתמש גם ביתר הענפים (אם ייקראו את אותו chat-core.js)
-    try { localStorage.setItem('houston_sheet_api_url', window.APP_CONFIG.SHEET_API_URL); } catch(e){}
   </script>
 
-  <!-- חשוב: ודא שהגרסאות האלו קיימות אצלך מהתיקון האחרון -->
-  <script src="../js/chat-core.js?v=2025.09.01-fix_api"></script>
-  <script src="../js/flows/boost.js?v=2025.09.01-fix_api"></script>
+  <!-- נטען את chat-core בשביל ולידציה ושליחה בלבד -->
+  <script src="../js/chat-core.js?v=3"></script>
+
+  <!-- הזרימה עצמה (וויזארד, לא צ'אט) -->
+  <script src="../js/flows/boost.js?v=1"></script>
   <script>
-    window.addEventListener('DOMContentLoaded', () => {
-      Chat.runFlow(window.Flows.Boost.run);
-    });
+    // הפעלה
+    window.addEventListener('DOMContentLoaded', () => window.BoostWizard?.start?.());
   </script>
 </body>
 </html>
