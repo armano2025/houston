@@ -1,8 +1,13 @@
 /* /styles.light.css
-   עיצוב גלובלי לשנת 2025: RTL, רספונסיבי, dark mode, glassmorphism.
-   קובץ יחיד לכל העמודים (index/lead/thanks). כולל שיפורי נגישות ופוקוס. */
+   עיצוב גלובלי (2025) ליוסטון 👨‍🚀 – RTL, רספונסיבי ודגש על קריאות במובייל.
+   שדרוגים עיקריים:
+   1) ביטול הזום המעצבן באייפון ע"י גודל־פונט מינימלי 16px בשדות טופס.
+   2) טיפוגרפיה גדולה וברורה יותר בכל הממשק.
+   3) נגישות ופוקוס משופרים, אנימציות עדינות בלבד, ושמירה על העיצוב הקיים. */
 
+/* ========= Design Tokens ========= */
 :root{
+  /* צבעים */
   --bg:#f6f8fb;
   --card:rgba(255,255,255,0.8);
   --glass:blur(10px) saturate(120%);
@@ -16,8 +21,17 @@
   --chip:#f1f5f9;
   --chip-brd:#e2e8f0;
   --shadow:0 8px 30px rgba(15,23,42,0.08);
+
+  /* רדיוסים ורווחים */
   --radius:16px;
   --gap:14px;
+
+  /* טיפוגרפיה (סקייל רספונסיבי עדין) */
+  --fs-base:clamp(16px, 0.95rem + 0.3vw, 18px);  /* טקסט כללי */
+  --fs-sm:clamp(14px, 0.85rem, 15px);           /* טקסטי עזר */
+  --fs-lg:clamp(17px, 1rem + 0.2vw, 19px);      /* כפתורים/שדות */
+  --fs-title:clamp(20px, 1.05rem + 0.8vw, 26px);
+  --fs-h2:clamp(18px, 1rem + 0.5vw, 22px);
 }
 @media (prefers-color-scheme: dark){
   :root{
@@ -28,11 +42,14 @@
   }
 }
 
+/* ========= Base ========= */
 *{ box-sizing:border-box }
 html,body{ height:100% }
+html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; } /* שמירה על סקלת טקסט עקבית */
 body{
   margin:0;
-  font-family:"Rubik",system-ui,Segoe UI,Arial,sans-serif;
+  font-family:"Rubik", system-ui, Segoe UI, Arial, sans-serif;
+  font-size:var(--fs-base); line-height:1.55; letter-spacing:.01em;
   background:
     radial-gradient(1200px 800px at 10% -20%, rgba(91,124,250,.25), transparent 65%),
     radial-gradient(800px 600px at 120% 10%, rgba(110,231,249,.25), transparent 55%),
@@ -40,6 +57,7 @@ body{
   color:var(--text);
 }
 
+/* ========= Layout ========= */
 .wrap{ min-height:100dvh; display:grid; place-items:center; padding:24px }
 .card{
   width:min(980px,100%);
@@ -54,75 +72,106 @@ body{
   width:44px; height:44px; border-radius:12px; display:grid; place-items:center;
   background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; font-weight:800; letter-spacing:1px;
 }
-.title{ font-size:1.4rem; font-weight:700 }
-.subtitle{ margin:0; color:var(--muted) }
+.title{ font-size:var(--fs-title); font-weight:700 }
+.subtitle{ margin:0; color:var(--muted); font-size:var(--fs-sm) }
 .body{ padding:18px 22px 24px }
 
+/* ========= Bubbles (שפה אחידה גם בוויזארד) ========= */
 .bubble{
-  max-width:720px; padding:12px 14px; border-radius:16px;
-  border:1px solid var(--border); background:#fff; margin:8px 0;
+  max-width:720px; padding:14px 16px; border-radius:16px;
+  border:1px solid var(--border); background:#fff; margin:10px 0;
+  font-size:var(--fs-base);
 }
 @media (prefers-color-scheme: dark){ .bubble{ background:rgba(255,255,255,0.06) } }
 .bubble.bot{ border-style:dashed }
 .bubble.user{ margin-inline-start:auto }
 
+/* ========= Grid & Tiles ========= */
 .grid{ margin-top:12px; display:grid; gap:var(--gap); grid-template-columns:1fr }
-@media (min-width:720px){ .grid{ grid-template-columns:1fr 1fr 1fr } }
+@media (min-width:720px){ .grid{ grid-template-columns:repeat(3,1fr) } }
 .tile{
   display:block; text-decoration:none; color:inherit;
   background:linear-gradient(180deg, rgba(255,255,255,.85), rgba(255,255,255,.6));
   border:1px solid var(--border); border-radius:16px; padding:16px;
-  transition:transform .15s ease, box-shadow .15s ease;
+  transition:transform .18s ease, box-shadow .18s ease;
+  will-change:transform;
 }
 @media (prefers-color-scheme: dark){
   .tile{ background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04)) }
 }
+.tile h3{ margin:0 0 6px; font-size:var(--fs-h2) }
+.tile p{ margin:0; color:var(--muted); font-size:var(--fs-sm) }
 .tile:hover,.tile:focus-visible{ outline:none; transform:translateY(-2px); box-shadow:0 10px 30px rgba(0,0,0,.08) }
+@media (prefers-reduced-motion: reduce){
+  .tile{ transition:none } .tile:hover,.tile:focus-visible{ transform:none; box-shadow:none }
+}
 
+/* ========= Controls ========= */
 .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap }
 .btn{
-  appearance:none; border:1px solid var(--border); background:#fff; color:var(--text);
-  padding:10px 14px; border-radius:12px; font-weight:600; cursor:pointer;
+  appearance:none; -webkit-appearance:none;
+  border:1px solid var(--border); background:#fff; color:var(--text);
+  padding:12px 16px; border-radius:12px; font-weight:600; cursor:pointer;
+  font-size:var(--fs-lg); line-height:1; min-height:44px; /* Target ידידותי לאגודל */
 }
 @media (prefers-color-scheme: dark){ .btn{ background:rgba(255,255,255,0.06) } }
-.btn.primary{ background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; border-color:transparent }
+.btn.primary{
+  background:linear-gradient(135deg,var(--brand),var(--brand-2));
+  color:#fff; border-color:transparent;
+}
 .btn.ghost{ background:transparent }
 
+/* ========= Chips ========= */
 .chips{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px }
 .chip{
-  padding:8px 10px; border-radius:999px; background:var(--chip);
+  padding:9px 12px; border-radius:999px; background:var(--chip);
   border:1px solid var(--chip-brd); cursor:pointer; user-select:none;
+  font-size:var(--fs-base); line-height:1;
 }
 .chip[aria-pressed="true"]{ outline:2px solid var(--brand); outline-offset:1px }
 
-.field{ margin:10px 0 }
-label{ display:block; font-weight:600; margin-bottom:6px }
+/* ========= Form Fields ========= */
+.field{ margin:12px 0 }
+label{ display:block; font-weight:700; margin-bottom:6px; font-size:var(--fs-base) }
+
+/* 👇 ביטול "זום תוך כדי הקלדה" באייפון: תמיד 16px ומעלה בשדות */
 input,select,textarea{
-  width:100%; padding:10px 12px; border-radius:12px;
+  width:100%; padding:12px 14px; border-radius:12px;
   border:1px solid var(--border); background:#fff; color:var(--text);
+  font-size:16px; /* <- קריטי ל-iOS */
+  line-height:1.35;
+}
+@supports (-webkit-touch-callout:none){
+  input,select,textarea{ font-size:16px; } /* שכבת הגנה נוספת ל-Safari iOS */
 }
 @media (prefers-color-scheme: dark){ input,select,textarea{ background:rgba(255,255,255,0.06) } }
-input[type="date"],input[type="time"]{ padding:8px 10px }
+input[type="date"],input[type="time"]{ padding:10px 12px }
 
-.meta{ color:var(--muted); font-size:.925rem }
-.footerbar{
-  position:sticky; bottom:0; inset-inline:0; display:flex; gap:10px; padding:10px;
-  background:linear-gradient(180deg, transparent, rgba(0,0,0,.03)); backdrop-filter:blur(6px);
-}
-.notice.success{ color:var(--success) }
-.notice.danger{ color:var(--danger) }
-.topbar{ display:flex; justify-content:space-between; gap:10px; margin-bottom:10px }
-
-/* --- שיפורי UX/נגישות לטפסים (תוספת) --- */
 input:focus,select:focus,textarea:focus{
   outline:none; box-shadow:0 0 0 4px color-mix(in oklab, var(--brand) 25%, transparent);
   border-color: color-mix(in oklab, var(--brand) 60%, var(--border));
 }
 input:invalid,select:invalid,textarea:invalid{ border-color:#ef4444 }
-.status{ font-size:.95rem; color:var(--muted) }
+
+/* ========= Footer / Status ========= */
+.meta{ color:var(--muted); font-size:var(--fs-sm) }
+.footerbar{
+  position:sticky; bottom:0; inset-inline:0; display:flex; gap:10px; padding:10px;
+  background:linear-gradient(180deg, transparent, rgba(0,0,0,.03)); backdrop-filter:blur(6px);
+}
+.status{ font-size:var(--fs-sm); color:var(--muted) }
 .status.ok{ color:var(--success) }
 .status.err{ color:var(--danger) }
+.notice.success{ color:var(--success) }
+.notice.danger{ color:var(--danger) }
+.topbar{ display:flex; justify-content:space-between; gap:10px; margin-bottom:10px }
 .badge{
   display:inline-block; padding:8px 12px; border-radius:999px;
   background:var(--chip); border:1px solid var(--chip-brd); font-weight:700;
+}
+
+/* ========= Utilities ========= */
+.visually-hidden{
+  position:absolute !important; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
 }
