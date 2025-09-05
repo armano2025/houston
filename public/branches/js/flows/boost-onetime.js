@@ -1,339 +1,294 @@
-// /public/branches/js/flows/boost-onetime.js
-// נתיב: שיעור חד־פעמי על בסיס מקום פנוי
-// הסבר: וויזארד מסכים לפי הכללים החדשים: הזדהות → (פרטי תלמיד אם הורה) → מקצוע/כיתה/יחידות → מסלול+מורה
-//       → מועד מבוקש (תאריך + טווח 13–16 / 16–19 / 19–21) → הערות → סיכום+שליחה.
-//       מימוש חוקים: יחידות חובה רק בי׳/י״א/י״ב; אם י״א/י״ב 5 יח׳ — לא מאפשרים לבחור "קבוצה" (רק טריפל/פרטי).
-//       לכל מסלול יש מחיר ותיאור קצר בלחיצה. שליחה ל־GAS כ־text/plain, status="לטיפול".
+/***************************************
+# /public/branches/js/flows/boost-onetime.js
+# וויזארד "שיעור חד־פעמי" (לא מנויים) – flow='onetime'
+# מה הקובץ עושה?
+# וויזארד קצר: הזדהות → (אם הורה: פרטי תלמיד) → מקצוע/כיתה/יחידות → מסלול/תעריף + מורה מועדף
+# → תאריך+טווח שעות → הערות → סיכום ושליחה (text/plain) → Google Apps Script.
+***************************************/
 
-window.BoostOneTime = (() => {
-  const el = id => document.getElementById(id);
-  const stepEl   = el('step');
-  const backBtn  = el('backBtn');
-  const statusEl = el('statusBox');
+window.OneTimeWizard = (() => {
+  const $ = (id) => document.getElementById(id);
+  const stepEl = $('step');
+  const backBtn = $('backBtn');
+  const statusEl = $('statusBox');
 
-  const setStatus = (t='') => { if(statusEl) statusEl.textContent = t; };
-  const clearStatus = ()=> setStatus('');
-
-  const State = { data:{}, stack:[] };
-  const push = (fn)=> { State.stack.push(fn); backBtn.disabled = State.stack.length<=1; };
-  const goBack = ()=> {
-    if(State.stack.length>1){
-      State.stack.pop();
-      backBtn.disabled = State.stack.length<=1;
-      State.stack[State.stack.length-1]();
-    }
-  };
-  backBtn.onclick = goBack;
-
-  // עזרי UI קצרים
-  const Val = (window.Chat && window.Chat.Val) ? window.Chat.Val : {
-    nonEmpty: s => String(s??'').trim().length>0,
-    phoneIL: s => /^0\d{1,2}\d{7}$/.test(String(s??'').replace(/\D/g,'')),
-    date: s => /^\d{4}-\d{2}-\d{2}$/.test(s)
-  };
-
-  const fieldRow = ({label, name, type='text', placeholder='', value='', required=false, id})=>{
-    const _id = id || `f_${name}`;
-    return `
-      <div class="field">
-        <label for="${_id}">${label}${required?' *':''}</label>
-        <input id="${_id}" name="${name}" type="${type}" value="${value||''}" placeholder="${placeholder||''}" ${required?'required':''}/>
-      </div>`;
-  };
-  const selectRow = ({label, name, options=[], required=false, id})=>{
-    const _id = id || `f_${name}`;
-    const opts = ['<option value="">— בחרו —</option>'].concat(
-      options.map(o => `<option value="${String(o)}">${String(o)}</option>`)
-    ).join('');
-    return `
-      <div class="field">
-        <label for="${_id}">${label}${required?' *':''}</label>
-        <select id="${_id}" ${required?'required':''}>${opts}</select>
-      </div>`;
-  };
-  const chipsRow = ({label, id, options=[]})=>{
-    const chips = options.map(t=>`<button type="button" class="chip" data-value="${t}" aria-pressed="false">${t}</button>`).join('');
-    return `
-      <div class="field">
-        <label>${label}</label>
-        <div class="chips" id="${id}">${chips}</div>
-      </div>`;
-  };
-  const bindSingleChips = (id, onPick)=>{
-    const cont = el(id);
-    let picked = '';
-    cont.addEventListener('click',(ev)=>{
-      const b = ev.target.closest('.chip'); if(!b) return;
-      [...cont.querySelectorAll('.chip[aria-pressed="true"]')].forEach(x=> x.setAttribute('aria-pressed','false'));
-      b.setAttribute('aria-pressed', b.getAttribute('aria-pressed')==='true'?'false':'true');
-      picked = (b.getAttribute('aria-pressed')==='true') ? b.dataset.value : '';
-      onPick && onPick(picked, b);
-    });
-    return ()=> picked;
-  };
-
-  const SUBJECTS = ['מתמטיקה','אנגלית','פיזיקה','שפה','הוראה מתקנת','אנגלית מדוברת'];
-  const GRADES   = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ז׳','ח׳','ט׳','י׳','י״א','י״ב','סטודנט'];
-  const UNITS    = ['3','4','5'];
-  const RANGES   = [
+  const RANGES = [
     { label:'13:00–16:00', from:'13:00', to:'16:00' },
     { label:'16:00–19:00', from:'16:00', to:'19:00' },
-    { label:'19:00–21:00', from:'19:00', to:'21:00' },
+    { label:'19:00–21:00', from:'19:00', to:'21:00' }
   ];
+  const subjects = ['מתמטיקה','אנגלית','פיזיקה','שפה','הוראה מתקנת','אנגלית מדוברת'];
+  const grades   = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ז׳','ח׳','ט׳','י׳','י״א','י״ב','סטודנט'];
 
-  const TRACKS_ALL = [
-    { key:'קבוצה',  price:'80₪',  hint:'עד ~6–8 תלמידים בקבוצה' },
-    { key:'טריפל',  price:'100₪', hint:'עד 3 תלמידים' },
-    { key:'פרטי',   price:'160₪', hint:'שיעור 1 על 1' },
-  ];
-  const PRICE_BY_TRACK = { 'קבוצה':'80₪', 'טריפל':'100₪', 'פרטי':'160₪' };
+  const State = { data:{}, stack:[] };
+  const setStatus = (t='') => { statusEl && (statusEl.textContent = t); };
+  const push = (fn) => { State.stack.push(fn); backBtn.disabled = State.stack.length<=1; };
+  const goBack = () => { if(State.stack.length>1){ State.stack.pop(); backBtn.disabled = State.stack.length<=1; State.stack.at(-1)(); } };
+  backBtn.onclick = goBack;
 
-  /* ================== שלבים ================== */
+  // עזרי UI (שואבים מאותה שפה של chat-core)
+  const Val = (window.Chat && window.Chat.Val) ? window.Chat.Val : {
+    nonEmpty: s => String(s??'').trim().length>0,
+    phoneIL: s => /^0\d{1,2}\d{7}$/.test(String(s??'').replace(/[^\d]/g,'')),
+    date: s => /^\d{4}-\d{2}-\d{2}$/.test(s)
+  };
+  const send = (payload) => (window.Chat?.sendLeadToSheet
+    ? window.Chat.sendLeadToSheet(payload)
+    : fetch((window.APP_CONFIG||{}).SHEET_API_URL, {
+        method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify(payload)
+      }).then(r=>r.json()));
 
-  // מסך 1: הזדהות
-  function step1_identity(){
+  const field = ({label, id, type='text', placeholder='', required=false}) => `
+    <div class="field">
+      <label for="${id}">${label}${required?' *':''}</label>
+      <input id="${id}" type="${type}" placeholder="${placeholder}" ${required?'required':''}/>
+    </div>`;
+  const select = ({label, id, options=[], required=false}) => `
+    <div class="field">
+      <label for="${id}">${label}${required?' *':''}</label>
+      <select id="${id}" ${required?'required':''}>
+        <option value="">— בחרו —</option>
+        ${options.map(o=>`<option value="${o}">${o}</option>`).join('')}
+      </select>
+    </div>`;
+  const chips = ({label, id, opts=[]}) => `
+    <div class="field">
+      <label>${label}</label>
+      <div class="chips" id="${id}">
+        ${opts.map(v=>`<button type="button" class="chip" data-value="${v}">${v}</button>`).join('')}
+      </div>
+    </div>`;
+  const bindSingleChip = (id) => {
+    const c = $(id); let val='';
+    c.onclick = (ev)=>{
+      const b = ev.target.closest('.chip'); if(!b) return;
+      [...c.querySelectorAll('.chip[aria-pressed="true"]')].forEach(x=>x.setAttribute('aria-pressed','false'));
+      b.setAttribute('aria-pressed', 'true'); val = b.dataset.value || b.textContent.trim();
+    };
+    return ()=> val;
+  };
+
+  /* ===== שלבים ===== */
+
+  // 1) הזדהות
+  function step1_contact(){
     stepEl.innerHTML = `
-      <div class="title-row"><h3>שיעור חד־פעמי – פרטי קשר 👨‍🚀</h3><div class="muted">שלב 1/7</div></div>
-      ${chipsRow({label:'עם מי אני מדבר?', id:'chips_role', options:['תלמיד','הורה']})}
-      ${fieldRow({label:'שם פרטי',  name:'firstName', placeholder:'לדוגמה: חן', required:true})}
-      ${fieldRow({label:'שם משפחה', name:'lastName',  placeholder:'לדוגמה: בראונשטיין', required:true})}
-      ${fieldRow({label:'טלפון',     name:'phone',     placeholder:'05XXXXXXXX', type:'tel', required:true})}
+      <div class="title-row"><h3>שיעור חד־פעמי 👨‍🚀</h3></div>
+      <div class="meta">כדי שאוכל לדייק את הבקשה, נזין כמה פרטים קצרים ונשלח למזכירות 🧑‍🚀</div>
+      ${chips({label:'עם מי אני מדבר?', id:'chips_role', opts:['תלמיד','הורה']})}
+      ${field({label:'שם פרטי', id:'firstName', placeholder:'לדוגמה: חן', required:true})}
+      ${field({label:'שם משפחה', id:'lastName', placeholder:'לדוגמה: בראונשטיין', required:true})}
+      ${field({label:'טלפון', id:'phone', placeholder:'05XXXXXXXX', required:true})}
       <div class="wizard-actions">
         <button class="btn primary" id="next">המשך</button>
       </div>`;
-    push(step1_identity);
+    push(step1_contact);
 
-    const getRole = bindSingleChips('chips_role');
-    el('next').onclick = ()=>{
+    const getRole = bindSingleChip('chips_role');
+    $('next').onclick = ()=>{
       const role = getRole();
-      const firstName = el('f_firstName').value.trim();
-      const lastName  = el('f_lastName').value.trim();
-      const phone     = el('f_phone').value.replace(/[^\d]/g,'');
-      if(!Val.nonEmpty(role))      return setStatus('בחר/י: תלמיד או הורה');
+      const firstName = $('firstName').value.trim();
+      const lastName  = $('lastName').value.trim();
+      const phone     = $('phone').value.replace(/[^\d]/g,'');
+      if(!Val.nonEmpty(role))      return setStatus('נא לבחור מי ממלא (תלמיד/הורה)');
       if(!Val.nonEmpty(firstName)) return setStatus('נא למלא שם פרטי');
       if(!Val.nonEmpty(lastName))  return setStatus('נא למלא שם משפחה');
-      if(!Val.phoneIL(phone))      return setStatus('מספר טלפון לא תקין');
-      clearStatus();
+      if(!Val.phoneIL(phone))      return setStatus('טלפון לא תקין');
       Object.assign(State.data, { role, firstName, lastName, phone });
-      (role === 'הורה') ? step2_studentOfParent() : step3_subjectGradeUnits();
+      setStatus('');
+      step2_studentIfParent();
     };
   }
 
-  // מסך 2 (רק הורה): פרטי התלמיד
-  function step2_studentOfParent(){
+  // 2) אם הורה — פרטי תלמיד; אם תלמיד — דילוג למסך מקצוע/כיתה/יחידות
+  function step2_studentIfParent(){
+    if(State.data.role !== 'הורה'){ step3_studyBasics(); return; }
     stepEl.innerHTML = `
-      <div class="title-row"><h3>פרטי תלמיד 👨‍🚀</h3><div class="muted">שלב 2/7</div></div>
-      ${fieldRow({label:'שם פרטי התלמיד/ה',  name:'studentName',      placeholder:'לדוגמה: נועה', required:true})}
-      ${fieldRow({label:'שם משפחה התלמיד/ה', name:'studentLastName',  placeholder:'לדוגמה: כהן', required:true})}
+      <div class="title-row"><h3>פרטי התלמיד/ה 👨‍🚀</h3><div class="muted">שלב 2/6</div></div>
+      ${field({label:'שם פרטי התלמיד/ה', id:'studentName', placeholder:'לדוגמה: נועה', required:true})}
+      ${field({label:'שם משפחה התלמיד/ה', id:'studentLastName', placeholder:'לדוגמה: כהן', required:true})}
       <div class="wizard-actions">
         <button class="btn" id="prev">חזרה</button>
         <button class="btn primary" id="next">המשך</button>
       </div>`;
-    push(step2_studentOfParent);
-
-    el('prev').onclick = goBack;
-    el('next').onclick = ()=>{
-      const studentName = el('f_studentName').value.trim();
-      const studentLastName = el('f_studentLastName').value.trim();
-      if(!Val.nonEmpty(studentName))     return setStatus('נא למלא שם תלמיד/ה');
+    push(step2_studentIfParent);
+    $('prev').onclick = backBtn.onclick;
+    $('next').onclick = ()=>{
+      const studentName = $('studentName').value.trim();
+      const studentLastName = $('studentLastName').value.trim();
+      if(!Val.nonEmpty(studentName)) return setStatus('נא למלא שם תלמיד/ה');
       if(!Val.nonEmpty(studentLastName)) return setStatus('נא למלא שם משפחה של התלמיד/ה');
-      clearStatus();
       Object.assign(State.data, { studentName, studentLastName });
-      step3_subjectGradeUnits();
+      setStatus('');
+      step3_studyBasics();
     };
   }
 
-  // מסך 3: מקצוע + כיתה + יחידות (אם נדרש)
-  function step3_subjectGradeUnits(){
+  // 3) מקצוע / כיתה / יחידות
+  function step3_studyBasics(){
     stepEl.innerHTML = `
-      <div class="title-row"><h3>מקצוע וכיתה 👨‍🚀</h3><div class="muted">שלב ${State.data.role==='הורה'?3:2}/7</div></div>
-      ${selectRow({label:'מקצוע', name:'subject', options:SUBJECTS, required:true})}
-      ${selectRow({label:'כיתה',  name:'grade',   options:GRADES,   required:true})}
+      <div class="title-row"><h3>פרטי לימוד 👨‍🚀</h3><div class="muted">שלב 3/6</div></div>
+      ${select({label:'מקצוע', id:'subject', options:subjects, required:true})}
+      ${select({label:'כיתה', id:'grade', options:grades, required:true})}
       <div id="unitsWrap" style="display:none">
-        ${selectRow({label:'יחידות לימוד', name:'units', options:UNITS, required:true, id:'f_units'})}
+        ${chips({label:'יחידות (לכיתות י/י״א/י״ב)', id:'chips_units', opts:['3','4','5']})}
       </div>
       <div class="wizard-actions">
         <button class="btn" id="prev">חזרה</button>
         <button class="btn primary" id="next">המשך</button>
       </div>`;
-    push(step3_subjectGradeUnits);
+    push(step3_studyBasics);
 
-    const gradeSel = el('f_grade');
-    const unitsWrap= el('unitsWrap');
-    const showUnits = ()=>{
-      const g = gradeSel.value;
-      unitsWrap.style.display = (['י׳','י״א','י״ב'].includes(g)) ? '' : 'none';
-    };
+    const gradeSel = $('grade');
+    const unitsWrap = $('unitsWrap');
+    const showUnits = ()=> { const g = gradeSel.value; unitsWrap.style.display = (['י׳','י״א','י״ב'].includes(g)) ? '' : 'none'; };
     gradeSel.addEventListener('change', showUnits);
     showUnits();
+    const getUnits = bindSingleChip('chips_units');
 
-    el('prev').onclick = goBack;
-    el('next').onclick = ()=>{
-      const subject = el('f_subject').value;
+    $('prev').onclick = backBtn.onclick;
+    $('next').onclick = ()=>{
+      const subject = $('subject').value;
       const grade   = gradeSel.value;
       const needUnits = ['י׳','י״א','י״ב'].includes(grade);
-      const units  = needUnits ? (el('f_units')?.value || '') : '';
+      const units = needUnits ? getUnits() : '';
       if(!Val.nonEmpty(subject)) return setStatus('נא לבחור מקצוע');
       if(!Val.nonEmpty(grade))   return setStatus('נא לבחור כיתה');
       if(needUnits && !Val.nonEmpty(units)) return setStatus('נא לבחור יחידות');
-      clearStatus();
       Object.assign(State.data, { subject, grade, units });
-      step4_trackTeacher();
+      setStatus('');
+      step4_trackRateTeacher();
     };
   }
 
-  // מסך 4: מסלול + מורה (אין העדפה/מלל חופשי) + חסימת "קבוצה" בי״א/י״ב 5 יח'
-  function step4_trackTeacher(){
-    const isGroupBlocked = (State.data.grade==='י״א' || State.data.grade==='י״ב') && State.data.units==='5';
-    const tracks = isGroupBlocked ? TRACKS_ALL.filter(t => t.key!=='קבוצה') : TRACKS_ALL;
-
-    const chipsHtml = tracks.map(t => {
-      const label = `שיעור במסלול ${t.key} – ${t.price}`;
-      return `<button type="button" class="chip" data-value="${t.key}" data-hint="${t.hint}" aria-pressed="false">${label}</button>`;
-    }).join('');
-
-    const blockedNote = isGroupBlocked
-      ? `<div class="hint">לתלמידי י״א/י״ב 5 יח׳ אין קבוצות – ניתן לבחור טריפל או פרטי.</div>`
-      : '';
+  // 4) מסלול/מחיר + מורה מועדף (כולל חסימת "קבוצתי" עבור י״א/י״ב 5 יחידות)
+  function step4_trackRateTeacher(){
+    const isHigh5 = (['י״א','י״ב'].includes(State.data.grade) && State.data.units==='5');
+    // רשימת המסלולים
+    const tracks = isHigh5
+      ? [
+          {key:'טריפל', label:'שיעור במסלול טריפל – 100₪', info:'עד 3 תלמידים בקבוצה'},
+          {key:'פרטי',  label:'שיעור במסלול פרטי – 160₪', info:'אחד על אחד'}
+        ]
+      : [
+          {key:'קבוצה', label:'שיעור במסלול קבוצה – 80₪',  info:'4–6 תלמידים בקבוצה'},
+          {key:'טריפל', label:'שיעור במסלול טריפל – 100₪', info:'עד 3 תלמידים בקבוצה'},
+          {key:'פרטי',  label:'שיעור במסלול פרטי – 160₪',  info:'אחד על אחד'}
+        ];
 
     stepEl.innerHTML = `
-      <div class="title-row"><h3>מסלול ומורה 👨‍🚀</h3><div class="muted">שלב ${State.data.role==='הורה'?4:3}/7</div></div>
+      <div class="title-row"><h3>מסלול ותעריף 👨‍🚀</h3><div class="muted">שלב 4/6</div></div>
       <div class="field">
-        <label>מסלול למידה (חובה)</label>
-        <div class="chips" id="chips_track">${chipsHtml}</div>
-        ${blockedNote}
-        <div id="trackHint" class="hint"></div>
-      </div>
-
-      <div class="field">
-        <label for="f_teacherPref">מורה מבוקש</label>
-        <div class="row">
-          <button type="button" class="chip" id="chip_no_pref">אין לי העדפה</button>
+        <label>בחרו מסלול</label>
+        <div class="chips" id="chips_track">
+          ${tracks.map(t=>`<button type="button" class="chip" data-key="${t.key}" title="${t.info}">${t.label}</button>`).join('')}
         </div>
-        <input id="f_teacherPref" type="text" placeholder="לדוגמה: לירז (רשות)"/>
+        <div class="help">רמז: לחצו/החזיקו לקבלת הסבר קצר על גודל הקבוצה.</div>
       </div>
-
+      <div class="field">
+        <label for="teacherPref">מורה מועדף (רשות)</label>
+        <input id="teacherPref" placeholder="כתבו שם מורה או השאירו ריק" />
+        <div class="meta">או כתבו: "אין לי העדפה"</div>
+      </div>
       <div class="wizard-actions">
         <button class="btn" id="prev">חזרה</button>
         <button class="btn primary" id="next">המשך</button>
       </div>`;
-    push(step4_trackTeacher);
+    push(step4_trackRateTeacher);
 
-    // בחירת מסלול + הצגת הסבר קצר בלחיצה
-    const cont = el('chips_track');
-    let picked = '';
-    cont.addEventListener('click', (ev)=>{
+    let track = '', rate = '';
+    $('chips_track').onclick = (ev)=>{
       const b = ev.target.closest('.chip'); if(!b) return;
-      [...cont.querySelectorAll('.chip[aria-pressed="true"]')].forEach(x=> x.setAttribute('aria-pressed','false'));
-      b.setAttribute('aria-pressed', b.getAttribute('aria-pressed')==='true' ? 'false' : 'true');
-      picked = b.getAttribute('aria-pressed')==='true' ? b.dataset.value : '';
-      el('trackHint').textContent = picked ? `מידע: ${b.dataset.hint}` : '';
-    });
-
-    // "אין לי העדפה" – מנקה קלט
-    el('chip_no_pref').onclick = ()=>{
-      el('f_teacherPref').value = 'אין העדפה';
-      el('f_teacherPref').focus();
+      [...$('chips_track').querySelectorAll('.chip[aria-pressed="true"]')].forEach(x=>x.setAttribute('aria-pressed','false'));
+      b.setAttribute('aria-pressed','true');
+      track = b.dataset.key;
+      const text = b.textContent || '';
+      rate = text.includes('160') ? '160₪' : text.includes('100') ? '100₪' : '80₪';
     };
 
-    el('prev').onclick = goBack;
-    el('next').onclick = ()=>{
-      const teacher = (el('f_teacherPref').value||'').trim();
-      if(!Val.nonEmpty(picked)) return setStatus('נא לבחור מסלול למידה');
-      clearStatus();
-      Object.assign(State.data, { track: picked, teacher: teacher });
-      step5_when();
+    $('prev').onclick = backBtn.onclick;
+    $('next').onclick = ()=>{
+      if(!Val.nonEmpty(track)) return setStatus('נא לבחור מסלול');
+      const teacherPreference = $('teacherPref').value.trim();
+      Object.assign(State.data, { track, rate, teacherPreference });
+      setStatus('');
+      step5_dateTime();
     };
   }
 
-  // מסך 5: מועד מבוקש – תאריך + טווח שעות
-  function step5_when(){
-    const optHtml = ['<option value="">— בחרו טווח —</option>']
-      .concat(RANGES.map((r,i)=>`<option value="${i}">${r.label}</option>`)).join('');
-
+  // 5) תאריך + טווח שעות
+  function step5_dateTime(){
     stepEl.innerHTML = `
-      <div class="title-row"><h3>מועד מבוקש 👨‍🚀</h3><div class="muted">שלב ${State.data.role==='הורה'?5:4}/7</div></div>
-      ${fieldRow({label:'תאריך מבוקש', name:'date', type:'date', required:true})}
+      <div class="title-row"><h3>תיאום זמן 👨‍🚀</h3><div class="muted">שלב 5/6</div></div>
+      ${field({label:'תאריך מבוקש', id:'preferredDate', type:'date', required:true})}
       <div class="field">
-        <label for="f_range">טווח שעות</label>
-        <select id="f_range">${optHtml}</select>
+        <label>טווח שעות</label>
+        <div class="chips" id="chips_range">
+          ${RANGES.map((r,i)=>`<button type="button" class="chip" data-i="${i}">${r.label}</button>`).join('')}
+        </div>
       </div>
       <div class="wizard-actions">
         <button class="btn" id="prev">חזרה</button>
         <button class="btn primary" id="next">המשך</button>
       </div>`;
-    push(step5_when);
+    push(step5_dateTime);
 
-    el('prev').onclick = goBack;
-    el('next').onclick = ()=>{
-      const date = el('f_date').value;
-      const idx  = el('f_range').value;
-      if(!Val.date(date)) return setStatus('נא לבחור תאריך תקין');
-      if(String(idx)==='') return setStatus('נא לבחור טווח שעות');
-      const r = RANGES[Number(idx)];
-      clearStatus();
-      Object.assign(State.data, { date, timeRange: { from:r.from, to:r.to }, timeRangeLabel: r.label });
-      step6_notes();
+    let picked = null;
+    $('chips_range').onclick = (ev)=>{
+      const b = ev.target.closest('.chip'); if(!b) return;
+      [...$('chips_range').querySelectorAll('.chip[aria-pressed="true"]')].forEach(x=>x.setAttribute('aria-pressed','false'));
+      b.setAttribute('aria-pressed','true');
+      picked = RANGES[Number(b.dataset.i)];
+    };
+
+    $('prev').onclick = backBtn.onclick;
+    $('next').onclick = ()=>{
+      const preferredDate = $('preferredDate').value;
+      if(!Val.date(preferredDate)) return setStatus('נא לבחור תאריך');
+      if(!picked) return setStatus('נא לבחור טווח שעות');
+      Object.assign(State.data, { preferredDate, timeRange: { from:picked.from, to:picked.to } });
+      setStatus('');
+      step6_notesSummary();
     };
   }
 
-  // מסך 6: הערות
-  function step6_notes(){
-    stepEl.innerHTML = `
-      <div class="title-row"><h3>הערות למזכירות (רשות) 👨‍🚀</h3><div class="muted">שלב ${State.data.role==='הורה'?6:5}/7</div></div>
-      <div class="field">
-        <label for="f_notes">הערות</label>
-        <textarea id="f_notes" rows="3" placeholder="כל דבר שיעזור לנו לשבץ אותך במהירות"></textarea>
-      </div>
-      <div class="wizard-actions">
-        <button class="btn" id="prev">חזרה</button>
-        <button class="btn primary" id="next">המשך</button>
-      </div>`;
-    push(step6_notes);
-
-    el('prev').onclick = goBack;
-    el('next').onclick = ()=>{
-      State.data.notes = (el('f_notes').value||'').trim();
-      step7_summary();
-    };
-  }
-
-  // מסך 7: סיכום ושליחה
-  function step7_summary(){
+  // 6) הערות + סיכום/שליחה
+  function step6_notesSummary(){
     const d = State.data;
-    const rows = [
-      ['מי ממלא', d.role],
-      ['שם', `${d.firstName||''} ${d.lastName||''}`.trim()],
-      ['טלפון', d.phone],
-      ...(d.role==='הורה' ? [['שם התלמיד/ה', `${d.studentName||''} ${d.studentLastName||''}`.trim()]] : []),
-      ['מקצוע', d.subject],
-      ['כיתה', d.grade],
-      ...(d.units ? [['יחידות', d.units]] : []),
-      ['מסלול', d.track ? `${d.track} (${PRICE_BY_TRACK[d.track]||''})` : ''],
-      ['מורה מבוקש', d.teacher||''],
-      ['מועד', `${d.date||''} • ${d.timeRangeLabel||''}`],
-      ...(d.notes ? [['הערות', d.notes]]:[])
-    ];
-
     stepEl.innerHTML = `
-      <div class="title-row"><h3>סיכום ושליחה 👨‍🚀</h3><div class="muted">שלב ${State.data.role==='הורה'?7:6}/7</div></div>
-      <div class="summary">
-        ${rows.map(([k,v])=>`<div><strong>${k}:</strong> ${v||'-'}</div>`).join('')}
+      <div class="title-row"><h3>הערות + סיכום 👨‍🚀</h3><div class="muted">שלב 6/6</div></div>
+      <div class="field">
+        <label for="notes">הערות למזכירות (רשות)</label>
+        <textarea id="notes" rows="3" placeholder="אילוצים, העדפות, מידע שיעזור לנו"></textarea>
+      </div>
+      <div class="bubble user">
+        <div class="summary">
+          ${[
+            ['שם פרטי', d.firstName], ['שם משפחה', d.lastName], ['טלפון', d.phone],
+            ['תפקיד', d.role],
+            ...(d.role==='הורה' ? [['תלמיד/ה', `${d.studentName||''} ${d.studentLastName||''}`]]: []),
+            ['מקצוע', d.subject], ['כיתה', d.grade], ...(d.units? [['יחידות', d.units]] : []),
+            ['מסלול', d.track], ['תעריף', d.rate],
+            ['מורה מועדף', d.teacherPreference||''],
+            ['תאריך מבוקש', d.preferredDate], ['טווח שעות', `${d.timeRange.from}-${d.timeRange.to}`]
+          ].map(([k,v])=>`<div><strong>${k}:</strong> ${v||'-'}</div>`).join('')}
+        </div>
       </div>
       <div class="wizard-actions">
         <button class="btn" id="prev">חזרה</button>
         <button class="btn primary" id="send">אישור ושליחה למזכירות 📤</button>
       </div>`;
-    push(step7_summary);
+    push(step6_notesSummary);
 
-    el('prev').onclick = goBack;
-    el('send').onclick = submit;
+    $('prev').onclick = backBtn.onclick;
+    $('send').onclick = submit;
   }
 
   async function submit(){
     const d = State.data;
-    const errs = [];
-    if(!Val.nonEmpty(d.role)) errs.push('role');
+    // ולידציה אחרונה
+    const errs=[];
     if(!Val.nonEmpty(d.firstName)) errs.push('firstName');
     if(!Val.nonEmpty(d.lastName))  errs.push('lastName');
     if(!Val.phoneIL(d.phone))      errs.push('phone');
@@ -343,55 +298,54 @@ window.BoostOneTime = (() => {
     }
     if(!Val.nonEmpty(d.subject)) errs.push('subject');
     if(!Val.nonEmpty(d.grade))   errs.push('grade');
-    if(['י׳','י״א','י״ב'].includes(d.grade) && !Val.nonEmpty(d.units)) errs.push('units');
+    if(['י׳','י״א','י״ב'].includes(d.grade||'') && !Val.nonEmpty(d.units)) errs.push('units');
     if(!Val.nonEmpty(d.track))   errs.push('track');
-    if(!Val.date(d.date))        errs.push('date');
-    if(!d.timeRange || !d.timeRange.from) errs.push('timeRange');
+    if(!Val.nonEmpty(d.rate))    errs.push('rate');
+    if(!Val.date(d.preferredDate)) errs.push('preferredDate');
+    if(!d.timeRange || !d.timeRange.from || !d.timeRange.to) errs.push('timeRange');
 
     if(errs.length){ setStatus('חסר/לא תקין: ' + errs.join(', ')); return; }
 
     const payload = {
-      flow: 'boost',                 // נשאר "boost" כדי להתאים ל־GAS/Headers
+      flow: 'onetime',                       // ← חשוב: זרימה נפרדת
       createdAt: new Date().toISOString(),
       project: (window.APP_CONFIG||{}).PROJECT || 'Houston',
       status: 'לטיפול',
       source: 'יוסטון – אתר',
-      // מזהה ממלא
-      role: d.role,
-      firstName: d.firstName, lastName: d.lastName, phone: String(d.phone).replace(/[^\d]/g,''),
-      // תלמיד
+
+      // מזדהה
+      firstName: d.firstName, lastName: d.lastName, phone: d.phone, role: d.role,
       studentName: d.studentName||'', studentLastName: d.studentLastName||'',
-      // פרטים אקדמיים
+
+      // לימוד
       subject: d.subject, grade: d.grade, units: d.units||'',
-      // מסלול + מורה
-      track: d.track, rate: PRICE_BY_TRACK[d.track] || '',
-      teacher: d.teacher||'',
-      // מועד
-      date: d.date,
-      timeRange: { ...d.timeRange },       // GAS ינרמל ל-"from-to"
-      // הערות
-      notes: d.notes||''
+
+      // מסלול/תמחור
+      track: d.track, rate: d.rate,
+
+      // העדפת מורה + הערות
+      teacherPreference: d.teacherPreference||'',
+      notes: (document.getElementById('notes')?.value||'').trim(),
+
+      // תיאום
+      preferredDate: d.preferredDate,
+      timeRange: d.timeRange
     };
 
     try{
       setStatus('שולח ל־Google Sheets…');
-      const send = window.Chat?.sendLeadToSheet;
-      const res = await (send ? send(payload) : fetch((window.APP_CONFIG||{}).SHEET_API_URL, {
-        method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(payload)
-      }).then(r=>r.json()));
+      const res = await send(payload);
       if(res && res.ok){
         setStatus('נשלח בהצלחה');
         stepEl.innerHTML = `
-          <div class="bubble ok">הבקשה נקלטה ✅ נתאם את השיעור על בסיס מקום פנוי 👨‍🚀</div>
-          <div class="wizard-actions">
-            <button class="btn" onclick="location.href='../../index.html'">חזרה לתפריט ראשי</button>
-          </div>`;
+          <div class="bubble bot">הבקשה נקלטה ✅ ניצור קשר בהקדם לתיאום 👨‍🚀</div>
+          <div class="wizard-actions"><button class="btn" onclick="location.href='../../index.html'">חזרה לדף הבית</button></div>`;
         backBtn.disabled = true;
         State.stack = [stepEl.innerHTML];
-      } else {
+      }else{
         throw new Error((res && res.error) || 'server_error');
       }
-    } catch(err){
+    }catch(err){
       setStatus('שגיאה: ' + err.message);
     }
   }
@@ -400,8 +354,8 @@ window.BoostOneTime = (() => {
     State.data = {};
     State.stack = [];
     backBtn.disabled = true;
-    clearStatus();
-    step1_identity();
+    setStatus('');
+    step1_contact();
   }
 
   return { start };
