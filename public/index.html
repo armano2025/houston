@@ -1,3 +1,9 @@
+<!-- /public/index.html
+     דף הבית של יוסטון 👨‍🚀
+     כולל כפתור חדש ל"שיעור חד־פעמי על בסיס מקום פנוי",
+     קישור לתפריט המנויים, וקישור לעמוד פרטי מנוי חודשי (מתעניינים).
+     נשמרת התאמה ל-styles.light.css ולעיצוב הכללי. -->
+
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -5,16 +11,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>יוסטון 👨‍🚀 – דף הבית</title>
   <meta name="theme-color" content="#5b7cfa" />
+  <meta name="description" content="יוסטון – בוט שירות חכם למרכז הלמידה בראונשטיין. קביעת שיעור השלמה, שינויי מערכת, תשלומים, הודעות וביטולים, וגם שיעור חד־פעמי על בסיס מקום פנוי." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./styles.light.css?v=1" />
+  <link rel="stylesheet" href="./styles.light.css?v=2" />
 </head>
 <body>
   <main class="wrap">
     <section class="card home">
       <header class="head">
-        <div class="brand">
+        <div class="brand" aria-label="יוסטון – מרכז הלמידה בראונשטיין">
           <div class="logo" aria-hidden="true">HB</div>
           <div class="title">יוסטון 👨‍🚀</div>
           <p class="subtitle">בוט שירות חכם למרכז הלמידה בראונשטיין</p>
@@ -23,27 +30,28 @@
 
       <div class="body">
         <div class="bubble bot" role="status" aria-live="polite">
-          היי, אני יוסטון 👨‍🚀<br/>
-          איך אפשר לעזור היום?
+          היי, אני יוסטון 👨‍🚀<br/>איך אפשר לעזור היום?
         </div>
 
-        <nav class="grid">
+        <!-- כפתורי ניווט ראשיים -->
+        <nav class="grid" aria-label="תפריט ראשי">
           <!-- מנויים -->
-          <a class="tile" href="./branches/branch3/index.html" aria-label="מנויים">
+          <a class="tile" href="./branches/branch3/index.html" aria-label="מנויים – תפריט פעולות למנוי קיים">
             <h3>מנויים</h3>
             <p>תפריט פעולות למנוי קיים (Makeup / Reschedule / Billing / Message / Cancel)</p>
           </a>
 
-          <!-- לא מנויים – שיעור חד-פעמי על בסיס מקום פנוי -->
+          <!-- לא מנויים – שיעור חד־פעמי על בסיס מקום פנוי -->
           <a class="tile" href="./branches/branch1/boost-onetime.html" aria-label="שיעור חד־פעמי על בסיס מקום פנוי">
             <h3>שיעור חד־פעמי</h3>
-            <p>שיעור על בסיס מקום פנוי (לא מנויים)</p>
+            <p>על בסיס מקום פנוי (לא מנויים)</p>
           </a>
 
-          <!-- מידע על מנוי חודשי -->
-          <a class="tile" href="./branches/branch2.html" aria-label="פרטי מנוי חודשי">
+          <!-- פרטי מנוי חודשי (מתעניינים) -->
+          <!-- אם אימצת את דף ה"מתעניינים" החדש, השאר את הקישור הזה; אחרת החלף ל-branch2.html -->
+          <a class="tile" href="./branches/info/index.html" aria-label="פרטי מנוי חודשי – מידע והרשמה">
             <h3>פרטי מנוי חודשי</h3>
-            <p>מידע על מסלולים, מחירים והרשמה</p>
+            <p>פרטים קצרים ואז מעבר לעמוד מידע</p>
           </a>
         </nav>
       </div>
