@@ -1,0 +1,76 @@
+<!-- /public/branches/branch3/billing.html
+     נתיב: "Billing – עדכון תשלום / חשבוניות"
+     הסבר: דף וויזארד מרובה-מסכים (לא צ'אט) לפי התסריט שסיכמנו: הזדהות → פרטי קשר/תלמיד → מקצוע/מסלול → כיתה/יחידות/מורה → נושא פנייה → הערות → סיכום ושליחה.
+     משתמש ב-styles.light.css לעיצוב וב-chat-core.js לוולידציה ושליחה ל-Google Sheets (בקשת POST בתצורת text/plain). הסטטוס נשמר כ"לטיפול". -->
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>יוסטון 👨‍🚀 – Billing (עדכון תשלום / חשבוניות)</title>
+  <meta name="theme-color" content="#5b7cfa" />
+  <link rel="stylesheet" href="../../styles.light.css?v=3" />
+  <style>
+    /* מעטפת וויזארד מינימלית, תואמת למבנה הקיים */
+    .wizard-wrap{ max-width:720px; margin:0 auto }
+    .wizard-step{ padding:18px 22px 24px }
+    .wizard-actions{ display:flex; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap }
+    .title-row{ display:flex; align-items:center; justify-content:space-between; gap:10px }
+    .muted{ color:var(--muted) }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="card wizard-wrap">
+
+      <!-- טופ־בר קצר -->
+      <div class="topbar" style="padding:12px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(255,255,255,.45),rgba(255,255,255,.2));backdrop-filter: blur(6px);display:flex;gap:8px;justify-content:space-between;align-items:center">
+        <div class="right" style="display:flex;gap:8px;align-items:center">
+          <button class="btn" id="backBtn" disabled>חזרה</button>
+        </div>
+        <div class="left" style="display:flex;gap:8px;align-items:center">
+          <button class="btn ghost" onclick="location.href='index.html'">תפריט מנוי/ה</button>
+          <button class="btn ghost" onclick="location.href='../../index.html'">לתפריט ראשי</button>
+        </div>
+      </div>
+
+      <!-- כותרת כללית -->
+      <div class="head">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">HB</div>
+          <div>
+            <div class="title">עדכון תשלום / חשבוניות (Billing)</div>
+            <p class="subtitle">נזין פרטים קצרים ונשלח למזכירות</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- אזור דינמי למסכי הוויזארד -->
+      <div class="wizard-step body" id="step"></div>
+
+      <!-- פוטר סטטוס -->
+      <div class="footerbar">
+        <span id="statusBox" class="status" aria-live="polite"></span>
+      </div>
+
+    </section>
+  </div>
+
+  <!-- קונפיג כללי (Webhook + Project) -->
+  <script>
+    window.APP_CONFIG = {
+      SHEET_API_URL: 'https://script.google.com/macros/s/AKfycbxRiJ_uMNpIJru-nNClAi787sA07hQSu7TX4cQEAm3_w3-dO2Hmp39ISxh81SqudA/exec',
+      PROJECT: 'Houston'
+    };
+  </script>
+
+  <!-- ליבה כללית: ולידציות + שליחה ל-GAS -->
+  <script src="../js/chat-core.js?v=3"></script>
+
+  <!-- הזרימה הספציפית (וויזארד Billing) -->
+  <script src="../js/flows/billing.js?v=1"></script>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => window.BillingWizard?.start?.());
+  </script>
+</body>
+</html>
