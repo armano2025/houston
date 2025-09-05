@@ -1,0 +1,75 @@
+<!-- /public/branches/info/index.html
+     דף "פרטי מנוי חודשי – מתעניינים": מינימום פרטים + הפניה לאתר החיצוני.
+     שומר עקביות עיצובית עם שאר המערכת (styles.light.css + chat-core.js). -->
+
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>יוסטון 👨‍🚀 – פרטי מנוי חודשי</title>
+  <meta name="theme-color" content="#5b7cfa" />
+  <link rel="stylesheet" href="../../styles.light.css?v=2" />
+  <style>
+    .wizard-wrap{ max-width:720px; margin:0 auto }
+    .wizard-step{ padding:18px 22px 24px }
+    .wizard-actions{ display:flex; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap }
+    .title-row{ display:flex; align-items:center; justify-content:space-between; gap:10px }
+    .muted{ color:var(--muted) }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="card wizard-wrap">
+
+      <!-- טופ־בר -->
+      <div class="topbar" style="padding:12px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(255,255,255,.45),rgba(255,255,255,.2));backdrop-filter: blur(6px);display:flex;gap:8px;justify-content:space-between;align-items:center">
+        <div class="right" style="display:flex;gap:8px;align-items:center">
+          <button class="btn" id="backBtn" disabled>חזרה</button>
+        </div>
+        <div class="left" style="display:flex;gap:8px;align-items:center">
+          <button class="btn ghost" onclick="location.href='../../index.html'">לתפריט ראשי</button>
+        </div>
+      </div>
+
+      <!-- כותרת -->
+      <div class="head">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">HB</div>
+          <div>
+            <div class="title">פרטי מנוי חודשי 👨‍🚀</div>
+            <p class="subtitle">נרשום 3 פרטים קצרים ואז נעבור לעמוד המידע</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- תוכן -->
+      <div class="wizard-step body" id="step"></div>
+
+      <!-- פוטר סטטוס -->
+      <div class="footerbar">
+        <span id="statusBox" class="muted" aria-live="polite"></span>
+      </div>
+
+    </section>
+  </div>
+
+  <!-- קונפיג (Webhook + Project + קישור היעד) -->
+  <script>
+    window.APP_CONFIG = {
+      SHEET_API_URL: 'https://script.google.com/macros/s/AKfycbxRiJ_uMNpIJru-nNClAi787sA07hQSu7TX4cQEAm3_w3-dO2Hmp39ISxh81SqudA/exec',
+      PROJECT: 'Houston',
+      INFO_REDIRECT: 'https://wordpress-1184560-4777160.cloudwaysapps.com/'
+    };
+  </script>
+
+  <!-- chat-core לולידציה/שליחה -->
+  <script src="../js/chat-core.js?v=3"></script>
+
+  <!-- הזרימה (קלילה) -->
+  <script src="../js/flows/info.js?v=1"></script>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => window.InfoWizard?.start?.());
+  </script>
+</body>
+</html>
