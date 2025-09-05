@@ -1,6 +1,6 @@
 <!-- /public/branches/branch3/cancel.html
-     ביטול מנוי כוויזארד (מסך-מסך), עם טעינה של chat-core לשליחה/ולידציה.
-     משתמש באותו Webhook של Makeup, אז אין שינוי בצד השרת. -->
+     דף "ביטול מנוי (Cancel)" כוויזארד: לכל שלב מסך משלו + כפתור חזרה.
+     משתמש ב-styles.light.css לעיצוב, וב-chat-core.js רק בשביל ולידציה ושליחה ל-Google Sheets. -->
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -8,13 +8,16 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>יוסטון 👨‍🚀 – ביטול מנוי (Cancel)</title>
   <meta name="theme-color" content="#5b7cfa" />
-  <link rel="stylesheet" href="../../styles.light.css?v=2" />
+  <link rel="stylesheet" href="../../styles.light.css?v=3" />
   <style>
+    /* מיקרו-עיצוב למסכי הוויזארד */
     .wizard-wrap{ max-width:720px; margin:0 auto }
     .wizard-step{ padding:18px 22px 24px }
     .wizard-actions{ display:flex; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap }
     .title-row{ display:flex; align-items:center; justify-content:space-between; gap:10px }
     .muted{ color:var(--muted) }
+    .chips .chip[aria-pressed="true"]{ outline:2px solid var(--brand); outline-offset:1px }
+    .hidden{ display:none }
   </style>
 </head>
 <body>
@@ -32,12 +35,12 @@
         </div>
       </div>
 
-      <!-- כותרת -->
+      <!-- כותרת עליונה -->
       <div class="head">
         <div class="brand">
           <div class="logo" aria-hidden="true">HB</div>
           <div>
-            <div class="title">ביטול מנוי 👨‍🚀</div>
+            <div class="title">ביטול מנוי</div>
             <p class="subtitle">נזין כמה פרטים קצרים ונשלח למזכירות</p>
           </div>
         </div>
@@ -54,7 +57,7 @@
     </section>
   </div>
 
-  <!-- קונפיג (אותו Webhook כמו ב-Makeup) -->
+  <!-- קונפיג (Webhook + Project) -->
   <script>
     window.APP_CONFIG = {
       SHEET_API_URL: 'https://script.google.com/macros/s/AKfycbxRiJ_uMNpIJru-nNClAi787sA07hQSu7TX4cQEAm3_w3-dO2Hmp39ISxh81SqudA/exec',
@@ -62,10 +65,10 @@
     };
   </script>
 
-  <!-- chat-core: ולידציה + שליחה -->
-  <script src="../js/chat-core.js?v=4"></script>
+  <!-- ליבה (ולידציה + שליחה) -->
+  <script src="../js/chat-core.js?v=3"></script>
 
-  <!-- הזרימה עצמה -->
+  <!-- זרימת ביטול -->
   <script src="../js/flows/cancel.js?v=1"></script>
   <script>
     window.addEventListener('DOMContentLoaded', () => window.CancelWizard?.start?.());
