@@ -1,166 +1,141 @@
-/* /public/branches/js/flows/info.js
-   INFO Lead – דף נחיתה למתעניינים: איסוף פרטי קשר (תלמיד/הורה, שם, שם משפחה, טלפון)
-   + צ'יפים של מקצועות/צרכים. שליחה ל-GAS כ-flow="info".
-   תיקון iOS: פתיחת ה-WordPress מתבצעת סינכרונית בלחיצת ה"שליחה" באמצעות <a target="_blank">,
-   כך שלא ייחסם בספארי. השליחה ל-GAS רצה במקביל. */
+// /public/branches/js/flows/info.js
+// דף אינפו (Landing): איסוף ליד קצר → שמירה ל-GAS (flow: "info")
+// + פתיחת אתר ה-WordPress בלשונית חדשה באופן בטוח גם באייפון.
+// שדות נשמרים: contactRole, firstName, lastName, phone, subjects[], interests[]
 
-(function(){
-  const FORM_ID        = 'leadForm';
-  const STATUS_ID      = 'statusBox';
-  const THANKS_ID      = 'thanksBox';
-  const ROLE_CHIPS_ID  = 'chips_role';
-  const SUBJECTS_ID    = 'chips_subjects';
-  const NEEDS_ID       = 'chips_needs';
-  const WP_URL         = 'https://wordpress-1184560-4777160.cloudwaysapps.com/';
+window.InfoPage = (() => {
+  const WP_URL = 'https://wordpress-1184560-4777160.cloudwaysapps.com/';
 
-  const el = (id)=>document.getElementById(id);
-  const statusEl = el(STATUS_ID);
-  const setStatus = (t='')=>{
-    if (!statusEl) return;
-    statusEl.textContent = t;
-    statusEl.classList.remove('err','ok');
-  };
-  const showErr = (t)=>{
-    if (statusEl){ statusEl.textContent=t; statusEl.classList.add('err'); }
-    else { alert(t); }
-  };
-  const showOk = (t)=>{
-    if (statusEl){ statusEl.textContent=t; statusEl.classList.add('ok'); }
-  };
+  const el = (id) => document.getElementById(id);
+  const form = () => el('infoForm');
+  const statusEl = () => el('statusBox');
 
+  // Validators (ניקח מ-chat-core אם קיים)
   const Val = (window.Chat && window.Chat.Val) ? window.Chat.Val : {
-    nonEmpty: s => String(s ?? '').trim().length > 0,
-    phoneIL: s => /^0\d{1,2}\d{7}$/.test(String(s ?? '').replace(/[^\d]/g,'')),
+    nonEmpty: (s) => String(s ?? '').trim().length > 0,
+    phoneIL: (s) => /^0\d{1,2}\d{7}$/.test(String(s ?? '').replace(/\D/g,'')),
   };
 
-  function bindChips(chipsId){
-    const box = el(chipsId);
-    if (!box) return;
-    box.addEventListener('click', (ev)=>{
-      const b = ev.target.closest('.chip'); if(!b) return;
-      b.setAttribute('aria-pressed', b.getAttribute('aria-pressed')==='true' ? 'false' : 'true');
-    });
-  }
-  function getPicked(chipsId){
-    const box = el(chipsId);
-    if (!box) return [];
-    return [...box.querySelectorAll('.chip[aria-pressed="true"]')]
-      .map(b => b.dataset.value || b.textContent.trim());
-  }
-
-  // iOS-safe: פתיחה סינכרונית באמצעות עוגן עם target=_blank
-  function openExternal(url){
-    try{
-      const a = document.createElement('a');
-      a.href = url;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      a.style.position = 'absolute';
-      a.style.left = '-9999px';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(()=>{ try{ document.body.removeChild(a); }catch(_){} }, 100);
-      return true;
-    } catch(_){
-      try { window.open(url, '_blank'); return true; } catch(__) {}
-    }
-    return false;
-  }
-
+  // שליחה ל-GAS (text/plain, עמיד ל-preflight)
   async function sendToSheet(payload){
     if (window.Chat?.sendLeadToSheet) return await window.Chat.sendLeadToSheet(payload);
+
     const url = (window.APP_CONFIG||{}).SHEET_API_URL;
-    if (!url) throw new Error('SHEET_API_URL not configured');
+    if (!url) throw new Error('SHEET_API_URL לא הוגדר');
+
     const res = await fetch(url, {
       method:'POST',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      headers:{ 'Content-Type':'text/plain;charset=utf-8' },
       body: JSON.stringify(payload),
-      mode:'cors', redirect:'follow', keepalive:true
+      mode:'cors',
+      redirect:'follow',
+      keepalive:true
     });
+
     if (res.type === 'opaque') return { ok:true, opaque:true };
-    if (!res.ok){
-      const t = await res.text().catch(()=> '');
-      throw new Error(`HTTP ${res.status} ${res.statusText}${t?` — ${t.slice(0,120)}`:''}`);
-    }
     const raw = await res.text();
     try { return JSON.parse(raw); } catch(e){}
     return (/ok/i.test(raw) ? { ok:true, raw } : { ok:false, raw });
   }
 
+  // הפעלת צ'יפים (סינגל/מולטי)
+  function bindChips(containerId, { multi=false } = {}){
+    const cont = el(containerId);
+    if (!cont) return ()=> multi ? [] : '';
+    cont.addEventListener('click', (ev)=>{
+      const b = ev.target.closest('.chip'); if(!b) return;
+      if (!multi){
+        [...cont.querySelectorAll('.chip[aria-pressed="true"]')].forEach(x=>x.setAttribute('aria-pressed','false'));
+      }
+      const now = b.getAttribute('aria-pressed') === 'true';
+      b.setAttribute('aria-pressed', now ? 'false' : 'true');
+    });
+    return () => {
+      const picked = [...cont.querySelectorAll('.chip[aria-pressed="true"]')].map(b => b.dataset.value);
+      return multi ? picked : (picked[0] || '');
+    };
+  }
+
+  // פתיחה בטוחה של קישור (ידידותי ל-iOS) – בתוך מחוות המשתמש
+  function safeOpenNewTab(url){
+    // עוגן זמני כדי להבטיח שהפתיחה תיחשב "מחווה" גם בספארי
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  function setStatus(msg, type=''){
+    const s = statusEl(); if (!s) return;
+    s.textContent = msg || '';
+    s.classList.remove('ok','err');
+    if (type) s.classList.add(type);
+  }
+
   function init(){
-    bindChips(ROLE_CHIPS_ID);
-    bindChips(SUBJECTS_ID);
-    bindChips(NEEDS_ID);
+    // הפעלת צ'יפים
+    const getRole      = bindChips('chips_role',      { multi:false });
+    const getSubjects  = bindChips('chips_subjects',  { multi:true  });
+    const getInterests = bindChips('chips_interests', { multi:true  });
 
-    const form = el(FORM_ID);
-    if (!form) return;
-
-    // שיפור מקלדת בטלפון (בעיקר iOS)
-    const phoneEl = document.getElementById('f_phone');
-    if (phoneEl){
-      phoneEl.setAttribute('type','tel');
-      phoneEl.setAttribute('inputmode','tel');
-      phoneEl.setAttribute('autocomplete','tel');
-      phoneEl.setAttribute('pattern','[0-9]*');
-    }
-
-    form.addEventListener('submit', async (ev)=>{
+    // שליחה
+    form().addEventListener('submit', async (ev)=>{
       ev.preventDefault();
       setStatus('');
 
-      // איסוף + ולידציה
-      const roleBtn  = document.querySelector('#'+ROLE_CHIPS_ID+' .chip[aria-pressed="true"]');
-      const role     = roleBtn ? roleBtn.dataset.value : '';
-      const firstName= (document.getElementById('f_first')||{}).value?.trim() || '';
-      const lastName = (document.getElementById('f_last')||{}).value?.trim() || '';
-      const phoneRaw = (document.getElementById('f_phone')||{}).value || '';
-      const phone    = String(phoneRaw).replace(/[^\d]/g,'');
-      const subjects = getPicked(SUBJECTS_ID);
-      const needs    = getPicked(NEEDS_ID);
+      const contactRole = getRole();
+      const firstName = el('f_firstName').value.trim();
+      const lastName  = el('f_lastName').value.trim();
+      const phoneRaw  = el('f_phone').value;
+      const phone     = String(phoneRaw).replace(/[^\d]/g,'');
 
-      if(!Val.nonEmpty(role))      return showErr('בחר/י: תלמיד או הורה');
-      if(!Val.nonEmpty(firstName)) return showErr('יש למלא שם פרטי');
-      if(!Val.nonEmpty(lastName))  return showErr('יש למלא שם משפחה');
-      if(!Val.phoneIL(phone))      return showErr('מספר טלפון לא תקין');
+      if (!Val.nonEmpty(contactRole)) return setStatus('נא לבחור: תלמיד/הורה','err');
+      if (!Val.nonEmpty(firstName))   return setStatus('נא למלא שם פרטי','err');
+      if (!Val.nonEmpty(lastName))    return setStatus('נא למלא שם משפחה','err');
+      if (!Val.phoneIL(phone))        return setStatus('טלפון לא תקין','err');
 
-      // חסימת דאבל־קליק
-      const submitBtn = form.querySelector('button[type="submit"], .btn.primary');
-      if (submitBtn) submitBtn.disabled = true;
+      const subjects  = getSubjects();
+      const interests = getInterests();
 
-      // פותחים את ה-WordPress *מיד* (סינכרוני – עובד גם ב-iOS Safari)
-      openExternal(WP_URL);
+      // פותחים את ה-WordPress מיד (מחווה של המשתמש) כדי לא להיחסם באייפון
+      safeOpenNewTab(WP_URL);
 
-      // שולחים במקביל למזכירות
+      // בינתיים – שולחים ל-שיטס
+      setStatus('שולח למזכירות…');
       const payload = {
         flow: 'info',
         createdAt: new Date().toISOString(),
         project: (window.APP_CONFIG||{}).PROJECT || 'Houston',
         status: 'לטיפול',
-        role, firstName, lastName, phone,
-        subjects, needs
+        source: 'Info Landing',
+        contactRole, firstName, lastName, phone,
+        subjects, interests
       };
 
       try{
-        setStatus('שולח למזכירות…');
-        await sendToSheet(payload);
-        setStatus('נשלח ✅');
-        const thanks = el(THANKS_ID);
-        if (thanks) thanks.style.display = 'block';
-        // ניקוי
-        form.reset();
-        [...document.querySelectorAll('.chip[aria-pressed="true"]')].forEach(c=>c.setAttribute('aria-pressed','false'));
-      }catch(err){
-        showErr('לא הצלחנו לשלוח כרגע, נסו שוב.');
-        console.error(err);
-      }finally{
-        if (submitBtn) submitBtn.disabled = false;
+        const res = await sendToSheet(payload);
+        if (res && res.ok){
+          setStatus('נשלח בהצלחה ✅','ok');
+          // ניקוי טופס קל
+          form().reset();
+          // כיבוי צ'יפים
+          ['chips_role','chips_subjects','chips_interests'].forEach(id=>{
+            const root = el(id);
+            if (!root) return;
+            root.querySelectorAll('.chip[aria-pressed="true"]').forEach(b => b.setAttribute('aria-pressed','false'));
+          });
+        } else {
+          throw new Error(res && res.raw ? res.raw : 'server_error');
+        }
+      } catch(err){
+        setStatus('שגיאה בשליחה: ' + err.message, 'err');
       }
-    });
+    }, { passive:false });
   }
 
-  if (document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  return { init };
 })();
