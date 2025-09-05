@@ -1,13 +1,13 @@
 /* /public/branches/js/flows/boost-onetime.js
    ויזארד "שיעור חד־פעמי על בסיס מקום פנוי" – ללא צ'אט.
-   בנוי באותו סגנון/מבנה של boost.js שלך.
+   עכשיו עם זמינות רב-מועדית (כמו Boost): ניתן להוסיף כמה תאריכים + טווחים.
    שלבים:
-   1) פרטי קשר — אני: תלמיד/הורה, שם פרטי, שם משפחה, טלפון (type='tel')
+   1) פרטי קשר — תלמיד/הורה, שם פרטי/משפחה, טלפון (type='tel')
    2) אם הורה: שם פרטי/משפחה של התלמיד | אם תלמיד: דילוג
-   3) מקצוע / כיתה / יחידות (לכיתות י׳/י״א/י״ב)
+   3) מקצוע / כיתה / יחידות (לי׳/י״א/י״ב) 
    4) מסלול/תעריף + מורה מועדף (חובה: טקסט או "אין לי העדפה"; אם י״א/י״ב 5 יח׳ — אין "קבוצה")
-   5) זמן שיעור — תאריך + טווח שעות (select: 13–16 / 16–19 / 19–21)
-   6) הערות — רשות (מסך נפרד)
+   5) זמינות — כמה מועדים (תאריך + טווח 13–16 / 16–19 / 19–21)
+   6) הערות — רשות
    7) סיכום ושליחה — flow='onetime', status="לטיפול". */
 
 window.OneTimeWizard = (() => {
@@ -34,14 +34,12 @@ window.OneTimeWizard = (() => {
   };
   backBtn.onclick = goBack;
 
-  // ולידציה
   const Val = (window.Chat && window.Chat.Val) ? window.Chat.Val : {
     nonEmpty: s => String(s??'').trim().length>0,
     phoneIL: s => /^0\d{1,2}\d{7}$/.test(String(s??'').replace(/[^\d]/g,'')),
     date: s => /^\d{4}-\d{2}-\d{2}$/.test(s),
   };
 
-  // שליחה עמידה ל-GAS (אותה מתודה כמו ב-boost.js)
   async function send(payload){
     if (window.Chat?.sendLeadToSheet) return await window.Chat.sendLeadToSheet(payload);
     const url = (window.APP_CONFIG||{}).SHEET_API_URL;
@@ -61,14 +59,12 @@ window.OneTimeWizard = (() => {
       const t = await res.text().catch(()=> '');
       throw new Error(`HTTP ${res.status} ${res.statusText}${t?` — ${t.slice(0,140)}`:''}`);
     }
-
-    // ננסה קודם JSON, ואם לא — טקסט
     const raw = await res.text();
     try { return JSON.parse(raw); } catch(e){}
     return (/ok/i.test(raw) ? { ok:true, raw } : { ok:false, raw });
   }
 
-  /* עזרי UI קצרים – כמו ב-boost.js */
+  /* UI helpers (כמו ב-Boost) */
   const fieldRow = ({label, name, type='text', placeholder='', value='', required=false}) => {
     const id = `f_${name}`;
     return `
@@ -114,7 +110,6 @@ window.OneTimeWizard = (() => {
 
   /* ===== שלבים ===== */
 
-  // 1) פרטי קשר
   function step1_contact(){
     stepEl.innerHTML = `
       <div class="title-row"><h3>שיעור חד־פעמי 👨‍🚀</h3></div>
@@ -146,7 +141,6 @@ window.OneTimeWizard = (() => {
     };
   }
 
-  // 2) אם הורה – פרטי תלמיד
   function step2_studentIfParent(){
     if (State.data.role !== 'הורה'){ step3_studyBasics(); return; }
 
@@ -172,7 +166,6 @@ window.OneTimeWizard = (() => {
     };
   }
 
-  // 3) מקצוע / כיתה / יחידות
   function step3_studyBasics(){
     stepEl.innerHTML = `
       <div class="title-row"><h3>פרטי לימוד 👨‍🚀</h3><div class="muted">שלב 3/7</div></div>
@@ -212,7 +205,6 @@ window.OneTimeWizard = (() => {
     };
   }
 
-  // 4) מסלול/תעריף + מורה מועדף (חובה)
   function step4_trackRateTeacher(){
     const isHigh5 = (['י״א','י״ב'].includes(State.data.grade) && State.data.units==='5');
     const tracks = isHigh5
@@ -247,7 +239,6 @@ window.OneTimeWizard = (() => {
       if(!Val.nonEmpty(picked)) return setStatus('נא לבחור מסלול');
       if(!Val.nonEmpty(teacherPreference)) return setStatus('נא להזין מורה מועדף או לבחור "אין לי העדפה"');
 
-      // פענוח מסלול/תעריף
       let track='', rate='';
       if (picked.includes('קבוצה')) { track='קבוצה'; rate='80₪'; }
       else if (picked.includes('טריפל')) { track='טריפל'; rate='100₪'; }
@@ -255,42 +246,76 @@ window.OneTimeWizard = (() => {
 
       Object.assign(State.data, { track, rate, teacherPreference });
       setStatus('');
-      step5_time();
+      step5_availability();
     };
   }
 
-  // 5) זמן שיעור — תאריך + טווח שעות
-  function step5_time(){
+  // ===== שלב 5 החדש: זמינות רב-מועדית =====
+  function step5_availability(){
     const optHtml = ['<option value="">— בחרו טווח —</option>']
       .concat(RANGES.map((r,i)=>`<option value="${i}">${r.label}</option>`)).join('');
+    const chosen = State.data.slots || [];
 
     stepEl.innerHTML = `
-      <div class="title-row"><h3>תיאום זמן 👨‍🚀</h3><div class="muted">שלב 5/7</div></div>
-      ${fieldRow({label:'תאריך מבוקש', name:'date', type:'date', required:true})}
+      <div class="title-row"><h3>זמינות לשיעור 👨‍🚀</h3><div class="muted">שלב 5/7</div></div>
+      ${fieldRow({label:'תאריך', name:'slotDate', type:'date', required:false})}
       <div class="field">
-        <label for="f_range">טווח שעות *</label>
-        <select id="f_range" required>${optHtml}</select>
+        <label for="f_slotRange">טווח שעות</label>
+        <select id="f_slotRange" name="slotRange">
+          ${optHtml}
+        </select>
       </div>
+
+      <div class="wizard-actions">
+        <button class="btn" id="add">+ הוסף מועד</button>
+      </div>
+
+      <div class="field">
+        <label>מועדים שנבחרו</label>
+        <div id="list" class="slot-list"></div>
+        <div class="meta">יש לבחור לפחות מועד אחד. לחיצה על מועד מוחקת אותו מהרשימה</div>
+      </div>
+
       <div class="wizard-actions">
         <button class="btn" id="prev">חזרה</button>
         <button class="btn primary" id="next">המשך</button>
       </div>`;
-    push(step5_time);
+    push(step5_availability);
+
+    const listEl = el('list');
+    const redraw = ()=>{
+      listEl.innerHTML = '';
+      chosen.forEach((s,idx)=>{
+        const b = document.createElement('button');
+        b.type='button'; b.className='chip del';
+        b.textContent = `${s.date} • ${s.from}-${s.to}`;
+        b.title='הסר'; b.onclick = ()=>{ chosen.splice(idx,1); redraw(); };
+        listEl.appendChild(b);
+      });
+    };
+    redraw();
+
+    el('add').onclick = ()=>{
+      const date = el('f_slotDate').value;
+      const idx  = el('f_slotRange').value;
+      if(!Val.date(date)) return setStatus('נא לבחור תאריך');
+      if(String(idx)==='') return setStatus('נא לבחור טווח שעות');
+      const r = RANGES[Number(idx)];
+      chosen.push({ date, from:r.from, to:r.to });
+      setStatus('');
+      el('f_slotDate').value=''; el('f_slotRange').value='';
+      redraw();
+    };
 
     el('prev').onclick = goBack;
     el('next').onclick = ()=>{
-      const date = el('f_date').value;
-      const idx  = el('f_range').value;
-      if(!Val.date(date))      return setStatus('נא לבחור תאריך');
-      if(String(idx)==='')     return setStatus('נא לבחור טווח שעות');
-      const r = RANGES[Number(idx)];
-      Object.assign(State.data, { date, timeRange:{ from:r.from, to:r.to } });
+      if(!chosen.length) return setStatus('הוסיפו לפחות מועד אחד');
+      State.data.slots = chosen.slice();
       setStatus('');
       step6_notes();
     };
   }
 
-  // 6) הערות — רשות
   function step6_notes(){
     stepEl.innerHTML = `
       <div class="title-row"><h3>הערות למזכירות (רשות) 👨‍🚀</h3><div class="muted">שלב 6/7</div></div>
@@ -311,7 +336,6 @@ window.OneTimeWizard = (() => {
     };
   }
 
-  // 7) סיכום ושליחה
   function step7_summary(){
     const d = State.data;
     const rows = [
@@ -325,8 +349,7 @@ window.OneTimeWizard = (() => {
       ['מסלול', d.track||''],
       ['תעריף', d.rate||''],
       ['מורה מועדף', d.teacherPreference||''],
-      ['תאריך מבוקש', d.date||''],
-      ['טווח שעות', d.timeRange ? `${d.timeRange.from}-${d.timeRange.to}` : ''],
+      ['מועדים', (d.slots||[]).map(s=>`${s.date} ${s.from}-${s.to}`).join(' | ')],
       ...(d.notes ? [['הערות', d.notes]]:[])
     ];
 
@@ -363,26 +386,25 @@ window.OneTimeWizard = (() => {
     if(!Val.nonEmpty(d.rate))      errs.push('rate');
     if(!Val.nonEmpty(d.teacherPreference)) errs.push('teacherPreference');
 
-    if(!Val.date(d.date))          errs.push('date');
-    if(!d.timeRange || !d.timeRange.from || !d.timeRange.to) errs.push('timeRange');
+    if(!Array.isArray(d.slots) || !d.slots.length) errs.push('slots');
 
     if(errs.length) return setStatus('חסר/לא תקין: ' + errs.join(', '));
 
+    // לשמירה ב-GAS: שולחים גם slots (העיקרי), וגם date/timeRange מהסלוט הראשון לשמירה נוחה/תאימות לאחור.
+    const first = d.slots[0];
     const payload = {
-      flow: 'onetime', // חשוב: יישב בטאב "Flow – One-time" (ע״פ ה-GAS המעודכן)
+      flow: 'onetime',
       createdAt: new Date().toISOString(),
       project: (window.APP_CONFIG||{}).PROJECT || 'Houston',
       status: 'לטיפול',
-      // יוצר קשר
       role: d.role, firstName: d.firstName, lastName: d.lastName, phone: d.phone,
-      // תלמיד (אם הורה)
       studentName: d.studentFirst||'', studentLastName: d.studentLast||'',
-      // לימודים
       subject: d.subject, grade: d.grade, units: d.units||'',
-      // מסלול/מחיר + מורה מועדף
       track: d.track, rate: d.rate, teacherPreference: d.teacherPreference,
-      // זמן
-      date: d.date, timeRange: d.timeRange, // {from,to} – ה-GAS שלך מנרמל למחרוזת
+      // זמינות
+      slots: d.slots.map(s=>({date:s.date, from:s.from, to:s.to})),
+      date: first?.date || '',                      // תאימות לאחור
+      timeRange: first ? { from:first.from, to:first.to } : '', // GAS מנרמל למחרוזת
       // הערות
       notes: d.notes||''
     };
