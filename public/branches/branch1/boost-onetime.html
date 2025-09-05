@@ -1,13 +1,13 @@
 <!-- /public/branches/branch1/boost-onetime.html
-     "שיעור חד-פעמי על בסיס מקום פנוי" – וויזארד רב-שלבי (לא צ'אט).
-     כל מסך עד 3 שדות, כפתור חזרה לדף קודם, שליחה ל-Google Sheets דרך chat-core.
-     הסטטוס נשמר תמיד "לטיפול". -->
+     מה הקובץ עושה?
+     דף וויזארד ל"שיעור חד־פעמי על בסיס מקום פנוי" (לא מנויים). טוען עיצוב גלובלי + chat-core לולידציות/שליחה,
+     מגדיר APP_CONFIG (Webhook + Project), ומפעיל את ה־Wizard (flow='onetime'). -->
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>יוסטון 👨‍🚀 – שיעור חד־פעמי (על בסיס מקום פנוי)</title>
+  <title>יוסטון 👨‍🚀 – שיעור חד־פעמי (Onetime)</title>
   <meta name="theme-color" content="#5b7cfa" />
   <link rel="stylesheet" href="../../styles.light.css?v=3" />
   <style>
@@ -15,10 +15,9 @@
     .wizard-step{ padding:18px 22px 24px }
     .wizard-actions{ display:flex; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap }
     .title-row{ display:flex; align-items:center; justify-content:space-between; gap:10px }
-    .slot-list{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px }
     .muted{ color:var(--muted) }
-    .chip.note{ cursor:default }
-    .hint{ font-size:.92rem; color:var(--muted); margin-top:6px }
+    .help{ font-size:.9rem; color:var(--muted) }
+    .chip.info{ cursor:help }
   </style>
 </head>
 <body>
@@ -31,7 +30,6 @@
           <button class="btn" id="backBtn" disabled>חזרה</button>
         </div>
         <div class="left" style="display:flex;gap:8px;align-items:center">
-          <button class="btn ghost" onclick="location.href='../branch3/index.html'">תפריט מנוי/ה</button>
           <button class="btn ghost" onclick="location.href='../../index.html'">לתפריט ראשי</button>
         </div>
       </div>
@@ -41,13 +39,13 @@
         <div class="brand">
           <div class="logo" aria-hidden="true">HB</div>
           <div>
-            <div class="title">שיעור חד־פעמי (על בסיס מקום פנוי)</div>
+            <div class="title">שיעור חד־פעמי על בסיס מקום פנוי 👨‍🚀</div>
             <p class="subtitle">נזין כמה פרטים קצרים ונשלח למזכירות</p>
           </div>
         </div>
       </div>
 
-      <!-- תוכן הוויזארד -->
+      <!-- גוף הוויזארד -->
       <div class="wizard-step body" id="step"></div>
 
       <!-- פוטר סטטוס -->
@@ -58,21 +56,21 @@
     </section>
   </div>
 
-  <!-- קונפיג של ה־Webhook -->
   <script>
+    // קונפיג כללי (אותו Webhook כמו שאר המערכת)
     window.APP_CONFIG = {
-      SHEET_API_URL: 'https://script.google.com/macros/s/AKfycbxRiJ_uMNpIJru-nNClAi787sA07hQSu7TX4cQEAm3_w3-dO2Hmp39ISxh81SqudA/exec',
+      SHEET_API_URL: 'PASTE_YOUR_DEPLOYED_WEB_APP_URL_HERE', // ← לעדכן ל-Deploy האחרון
       PROJECT: 'Houston'
     };
   </script>
 
-  <!-- ליבה כללית (ולידציות/שליחה/בוני־UI) -->
+  <!-- ליבת עזר: ולידציות/שליחה/רכיבי טופס -->
   <script src="../js/chat-core.js?v=3"></script>
 
-  <!-- הזרימה הספציפית -->
+  <!-- וויזארד onetime -->
   <script src="../js/flows/boost-onetime.js?v=1"></script>
   <script>
-    window.addEventListener('DOMContentLoaded', () => window.BoostOneTime?.start?.());
+    window.addEventListener('DOMContentLoaded', () => window.OneTimeWizard?.start?.());
   </script>
 </body>
 </html>
