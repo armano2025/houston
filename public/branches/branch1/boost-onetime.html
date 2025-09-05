@@ -1,15 +1,15 @@
 <!-- /public/branches/branch1/boost-onetime.html
-     מה הקובץ עושה?
-     דף וויזארד ל"שיעור חד־פעמי על בסיס מקום פנוי" (לא מנויים). טוען עיצוב גלובלי + chat-core לולידציות/שליחה,
-     מגדיר APP_CONFIG (Webhook + Project), ומפעיל את ה־Wizard (flow='onetime'). -->
+     שיעור חד־פעמי (לא מנויים) – וויזארד.
+     נטען styles + chat-core, ומריץ את OneTimeWizard.start().
+-->
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>יוסטון 👨‍🚀 – שיעור חד־פעמי (Onetime)</title>
+  <title>יוסטון 👨‍🚀 – שיעור חד־פעמי</title>
   <meta name="theme-color" content="#5b7cfa" />
-  <link rel="stylesheet" href="../../styles.light.css?v=3" />
+  <link rel="stylesheet" href="../../styles.light.css?v=4" />
   <style>
     .wizard-wrap{ max-width:720px; margin:0 auto }
     .wizard-step{ padding:18px 22px 24px }
@@ -17,24 +17,16 @@
     .title-row{ display:flex; align-items:center; justify-content:space-between; gap:10px }
     .muted{ color:var(--muted) }
     .help{ font-size:.9rem; color:var(--muted) }
-    .chip.info{ cursor:help }
   </style>
 </head>
 <body>
   <div class="wrap">
     <section class="card wizard-wrap">
-
-      <!-- טופ-בר -->
       <div class="topbar" style="padding:12px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(255,255,255,.45),rgba(255,255,255,.2));backdrop-filter: blur(6px);display:flex;gap:8px;justify-content:space-between;align-items:center">
-        <div class="right" style="display:flex;gap:8px;align-items:center">
-          <button class="btn" id="backBtn" disabled>חזרה</button>
-        </div>
-        <div class="left" style="display:flex;gap:8px;align-items:center">
-          <button class="btn ghost" onclick="location.href='../../index.html'">לתפריט ראשי</button>
-        </div>
+        <div class="right"><button class="btn" id="backBtn" disabled>חזרה</button></div>
+        <div class="left"><button class="btn ghost" onclick="location.href='../../index.html'">לתפריט ראשי</button></div>
       </div>
 
-      <!-- כותרת -->
       <div class="head">
         <div class="brand">
           <div class="logo" aria-hidden="true">HB</div>
@@ -45,32 +37,24 @@
         </div>
       </div>
 
-      <!-- גוף הוויזארד -->
       <div class="wizard-step body" id="step"></div>
 
-      <!-- פוטר סטטוס -->
       <div class="footerbar">
         <span id="statusBox" class="status" aria-live="polite"></span>
       </div>
-
     </section>
   </div>
 
   <script>
-    // קונפיג כללי (אותו Webhook כמו שאר המערכת)
+    // חשוב: לשים כאן את ה-URL של ה-Deploy האחרון של ה-Web App (Apps Script)
     window.APP_CONFIG = {
-      SHEET_API_URL: 'PASTE_YOUR_DEPLOYED_WEB_APP_URL_HERE', // ← לעדכן ל-Deploy האחרון
+      SHEET_API_URL: 'PASTE_YOUR_GAS_WEBAPP_URL_HERE',
       PROJECT: 'Houston'
     };
   </script>
 
-  <!-- ליבת עזר: ולידציות/שליחה/רכיבי טופס -->
   <script src="../js/chat-core.js?v=3"></script>
-
-  <!-- וויזארד onetime -->
-  <script src="../js/flows/boost-onetime.js?v=1"></script>
-  <script>
-    window.addEventListener('DOMContentLoaded', () => window.OneTimeWizard?.start?.());
-  </script>
+  <script src="../js/flows/boost-onetime.js?v=2"></script>
+  <script>window.addEventListener('DOMContentLoaded', () => window.OneTimeWizard?.start?.());</script>
 </body>
 </html>
