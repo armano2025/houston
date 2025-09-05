@@ -1,153 +1,228 @@
 <!-- /public/branches/info/index.html
-     דף נחיתה "פרטי מנוי חודשי" – פתיחה מיידית של עמוד המידע + איסוף פרטי קשר קצרים.
-     שומר על styles.light.css. שליחה ל-GAS לא חוסמת פתיחת הקישור. -->
+     דף נחיתה שיווקי וממיר (עברית בלבד) לפרטי מנוי חודשי / יצירת לידים.
+     נקי, מודרני ורספונסיבי. כולל טופס קצר: תלמיד/הורה + שם פרטי/משפחה + טלפון.
+     שליחה ל-Google Sheets דרך chat-core (text/plain – ללא preflight) עם flow:"info". -->
 
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>יוסטון 👨‍🚀 – פרטי מנוי חודשי</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>מרכז הלמידה בראונשטיין – מנוי חודשי 👨‍🚀</title>
   <meta name="theme-color" content="#5b7cfa" />
-  <meta name="description" content="מסלולים, מחירים, שעות ויתרונות מרכז הלמידה בראונשטיין. פתחו את עמוד המידע וקבלו מענה מהיר." />
-  <link rel="stylesheet" href="../../styles.light.css?v=2" />
+  <link rel="stylesheet" href="../../styles.light.css?v=3" />
+
   <style>
-    .hero{ display:grid; gap:10px; }
-    .hero h1{ margin:0; font-size:1.6rem }
-    .badges{ display:flex; gap:8px; flex-wrap:wrap }
-    .badge{ background:var(--chip); border:1px solid var(--chip-brd); border-radius:999px; padding:7px 10px; font-weight:600 }
-    .cta-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:6px }
-    .grid3{ display:grid; gap:var(--gap); grid-template-columns:1fr; }
-    @media (min-width:820px){ .grid3{ grid-template-columns:1fr 1fr 1fr } }
-    .tile.min{ padding:14px }
-    .faq dt{ font-weight:700; margin-top:8px }
-    .faq dd{ margin:0 0 8px 0; color:var(--muted) }
-    .sticky-cta{ position:sticky; bottom:0; inset-inline:0; padding:10px; background:linear-gradient(180deg, transparent, rgba(0,0,0,.04)); backdrop-filter:blur(6px) }
-    /* טופס קצר */
-    .mini-form .chips{ margin-top:4px }
-    .mini-form .row{ gap:8px }
-    .mini-form input{ font-size:16px } /* מונע זום במובייל */
+    /* שיפורי פרזנטציה קלים לדף הנחיתה */
+    .hero    { padding:28px 22px 12px }
+    .kicker  { font-weight:700; letter-spacing:.3px; color:var(--brand); margin:0 0 6px }
+    .headline{ font-size:clamp(1.5rem, 2.2rem, 2.4rem); font-weight:800; margin:0 0 6px }
+    .sub     { color:var(--muted); margin:0 0 16px }
+    .pillbar { display:flex; gap:8px; flex-wrap:wrap }
+    .pillbar .pill{ padding:8px 12px; border-radius:999px; background:var(--chip); border:1px solid var(--chip-brd); font-weight:600 }
+    .benefits{ display:grid; gap:12px; grid-template-columns:1fr; margin:18px 0 }
+    .benefit { padding:14px; border:1px solid var(--border); border-radius:14px; background:rgba(255,255,255,.8) }
+    @media(min-width:740px){ .benefits{ grid-template-columns:1fr 1fr } }
+
+    .cta         { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px }
+    .cta .btn    { font-size:1rem }
+    .form-card   { padding:16px; border:1px dashed var(--border); border-radius:16px; background:rgba(255,255,255,.55) }
+    .chips .chip { font-weight:600 }
+    .trust       { display:flex; gap:10px; flex-wrap:wrap; margin-top:8px }
+    .trust .badge{ background:var(--chip); border:1px solid var(--chip-brd); border-radius:10px; padding:6px 10px; font-size:.9rem }
+    .footerbar   { justify-content:space-between }
+    .ok-msg      { color:var(--success); font-weight:700 }
+    .err-msg     { color:var(--danger); font-weight:700 }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <section class="card">
-      <!-- טופ־בר -->
+  <main class="wrap">
+    <section class="card" style="max-width:920px">
+      <!-- בר עליון -->
       <div class="topbar" style="padding:12px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(255,255,255,.45),rgba(255,255,255,.2));backdrop-filter: blur(6px);">
-        <div style="display:flex;gap:8px;justify-content:space-between;align-items:center">
-          <div class="right" style="display:flex;gap:8px;align-items:center">
-            <button class="btn" onclick="history.back()">חזרה</button>
-          </div>
-          <div class="left" style="display:flex;gap:8px;align-items:center">
+        <div class="row" style="justify-content:space-between;width:100%">
+          <div class="row">
             <button class="btn ghost" onclick="location.href='../../index.html'">לתפריט ראשי</button>
           </div>
-        </div>
-      </div>
-
-      <!-- כותרת -->
-      <div class="head">
-        <div class="brand">
-          <div class="logo" aria-hidden="true">HB</div>
-          <div>
-            <div class="title">פרטי מנוי חודשי 👨‍🚀</div>
-            <p class="subtitle">נרשום 3 פרטים קצרים — ואז נעבור לעמוד המידע</p>
+          <div class="row">
+            <div class="badge">HB</div>
           </div>
         </div>
       </div>
 
-      <!-- תוכן -->
+      <!-- הירו -->
+      <header class="head hero">
+        <div class="kicker">מרכז הלמידה בראונשטיין</div>
+        <h1 class="headline">מנוי חודשי שמקפיץ את הביטחון ואת הציונים 👨‍🚀</h1>
+        <p class="sub">מסלולי לימוד חכמים, מורים מעולים ושקיפות מלאה. מצטרפים – ומתחילים להתקדם.</p>
+
+        <div class="pillbar" aria-hidden="true">
+          <span class="pill">מתמטיקה • אנגלית • פיזיקה</span>
+          <span class="pill">קבוצה / טריפל / פרטי</span>
+          <span class="pill">ליווי אישי + מדדים</span>
+        </div>
+
+        <div class="benefits" aria-label="יתרונות מרכזיים">
+          <div class="benefit"><strong>תוכנית מותאמת</strong><br/>תוכנית למידה לפי רמה ומטרות, עם התאמות שוטפות.</div>
+          <div class="benefit"><strong>מורים מנוסים</strong><br/>צוות מקצועי שמלמד בגובה העיניים ומייצר ביטחון.</div>
+          <div class="benefit"><strong>מסלולים גמישים</strong><br/>קבוצה, טריפל או פרטי – בוחרים מה שמתאים לכם.</div>
+          <div class="benefit"><strong>תקשורת שקופה</strong><br/>עדכונים למייל והודעות – אתם בתמונה תמיד.</div>
+        </div>
+
+        <div class="trust" aria-hidden="true">
+          <span class="badge">97% שביעות רצון</span>
+          <span class="badge">מאות תלמידים מרוצים</span>
+          <span class="badge">ללא התחייבות ארוכה</span>
+        </div>
+      </header>
+
+      <!-- טופס המרה קצר -->
       <div class="body">
-        <!-- HERO -->
-        <div class="bubble bot hero">
-          <h1>ללמוד חכם, יחד. 📚</h1>
-          <div class="badges">
-            <span class="badge">מסלולים לקבוצה / טריפל / פרטי</span>
-            <span class="badge">מורים מדהימים ומנוסים</span>
-            <span class="badge">שקיפות מחירים מלאה</span>
-          </div>
-          <div class="cta-row">
-            <a id="fallbackLink" class="btn primary" href="https://wordpress-1184560-4777160.cloudwaysapps.com/" target="_blank" rel="noopener">פתח עמוד מידע</a>
-            <button class="btn ghost" type="button" onclick="document.getElementById('leadArea').scrollIntoView({behavior:'smooth'})">או השאירו פרטים ונפתח יחד</button>
-          </div>
-        </div>
+        <section class="form-card" aria-labelledby="formTitle">
+          <h2 id="formTitle" class="title" style="font-size:1.2rem;margin:0 0 6px">רוצים לשמוע פרטים ולהצטרף?</h2>
+          <p class="subtitle" style="margin:0 0 10px">ממלאים 3 פרטים קצרים, והמזכירות חוזרת אליכם במהירות.</p>
 
-        <!-- טופס קצר (תלמיד/הורה + שם + טלפון) -->
-        <div id="leadArea" class="bubble user mini-form">
-          <form id="infoForm" novalidate>
+          <form id="leadForm" novalidate>
             <div class="field">
-              <label>עם מי אנחנו בקשר?</label>
+              <label>עם מי אנחנו מדברים? *</label>
               <div class="chips" id="chips_role">
-                <button type="button" class="chip" data-value="תלמיד" aria-pressed="false">תלמיד</button>
-                <button type="button" class="chip" data-value="הורה" aria-pressed="false">הורה</button>
+                <button type="button" class="chip" data-value="תלמיד">תלמיד</button>
+                <button type="button" class="chip" data-value="הורה">הורה</button>
               </div>
             </div>
+
             <div class="row">
-              <div style="flex:1">
+              <div style="flex:1;min-width:220px">
                 <label for="f_first">שם פרטי *</label>
-                <input id="f_first" type="text" placeholder="לדוגמה: חן" required />
+                <input id="f_first" name="firstName" autocomplete="given-name" required />
               </div>
-              <div style="flex:1">
+              <div style="flex:1;min-width:220px">
                 <label for="f_last">שם משפחה *</label>
-                <input id="f_last" type="text" placeholder="לדוגמה: בראונשטיין" required />
+                <input id="f_last" name="lastName" autocomplete="family-name" required />
               </div>
             </div>
-            <div class="row">
-              <div style="flex:1">
-                <label for="f_phone">טלפון *</label>
-                <input id="f_phone" type="tel" inputmode="tel" placeholder="05XXXXXXXX" required />
-              </div>
+
+            <div class="field">
+              <label for="f_phone">טלפון נייד *</label>
+              <input id="f_phone" name="phone" type="tel" inputmode="tel" placeholder="05XXXXXXXX" required />
+              <div class="meta">מספר ישראלי – ספרות בלבד</div>
             </div>
-            <div class="cta-row">
-              <button id="openInfo" class="btn primary" type="submit">פתח עמוד מידע בחלון חדש</button>
-              <button id="openOnly" class="btn" type="button">פתח בלי להשאיר פרטים</button>
+
+            <div class="cta">
+              <button class="btn primary" type="submit" id="ctaBtn">דברו איתי על המנוי</button>
+              <button class="btn ghost" type="button" id="moreBtn">רוצה לקרוא עוד</button>
             </div>
-            <div id="statusBox" class="meta" aria-live="polite"></div>
           </form>
-        </div>
 
-        <!-- יתרונות מהירים -->
-        <div class="grid3" style="margin-top:8px">
-          <div class="tile min">
-            <h3>קבוצה / טריפל / פרטי</h3>
-            <p class="meta">בוחרים את הקצב והמסגרת שמתאימים — אפשר לשלב ולשנות.</p>
+          <div id="thanksBox" class="bubble ok" style="display:none;margin-top:10px">
+            תודה! פנייתכם נקלטה ✅ נחזור אליכם בהקדם עם כל הפרטים.
           </div>
-          <div class="tile min">
-            <h3>מורים מעולים</h3>
-            <p class="meta">צוות מנוסה, יחס אישי והכנה לבגרויות בצורה יעילה.</p>
-          </div>
-          <div class="tile min">
-            <h3>שקיפות מלאה</h3>
-            <p class="meta">מחירים, תדירות, נוכחות ומעקב — הכל ברור ופשוט.</p>
-          </div>
-        </div>
-
-        <!-- FAQ קצר -->
-        <div class="bubble bot" style="margin-top:10px">
-          <h3 style="margin-top:0">שאלות נפוצות</h3>
-          <dl class="faq">
-            <dt>איך מתחילים?</dt>
-            <dd>פותחים את עמוד המידע, בוחרים מסלול ומשאירים פרטים — ונחזור אליכם לתיאום.</dd>
-            <dt>אפשר לשיעור ניסיון?</dt>
-            <dd>כן, לרוב אפשר לתאם שיעור היכרות קצר. כל הפרטים בעמוד.</dd>
-            <dt>אפשר לשנות מסלול בהמשך?</dt>
-            <dd>ברור. אנחנו גמישים ונדאג שהמסלול יתאים לקצב הלמידה.</dd>
-          </dl>
-        </div>
+          <div id="errBox" class="bubble danger" style="display:none;margin-top:10px"></div>
+        </section>
       </div>
 
-      <!-- CTA דביק -->
-      <div class="sticky-cta">
-        <div class="row" style="justify-content:space-between">
-          <span class="meta">מוכנים? פותחים את עמוד המידע 👨‍🚀</span>
-          <a class="btn primary" href="https://wordpress-1184560-4777160.cloudwaysapps.com/" target="_blank" rel="noopener">פתח עכשיו</a>
-        </div>
+      <!-- פוטר סטטוס/קישורים -->
+      <div class="footerbar">
+        <span id="statusBox" class="meta" aria-live="polite"></span>
+        <span class="muted">יוסטון 👨‍🚀</span>
       </div>
-
     </section>
-  </div>
+  </main>
 
-  <!-- אם chat-core קיים – נשתמש בו לשליחה -->
+  <!-- קונפיג Webhook (לעדכן לפי הפריסה שלך) -->
+  <script>
+    window.APP_CONFIG = window.APP_CONFIG || {
+      SHEET_API_URL: 'https://script.google.com/macros/s/AKfycbxRiJ_uMNpIJru-nNClAi787sA07hQSu7TX4cQEAm3_w3-dO2Hmp39ISxh81SqudA/exec',
+      PROJECT: 'Houston'
+    };
+  </script>
+
+  <!-- chat-core לשימוש בולידציה/שליחה -->
   <script src="../js/chat-core.js?v=3"></script>
-  <script src="./info.js?v=1"></script>
+
+  <script>
+    (function(){
+      const $ = (id) => document.getElementById(id);
+      const statusEl = $('statusBox'), errBox = $('errBox'), thanksBox = $('thanksBox');
+
+      // chips (בחירה בודדת)
+      (function bindChips(){
+        const cont = $('chips_role');
+        cont.addEventListener('click', (ev)=>{
+          const b = ev.target.closest('.chip'); if(!b) return;
+          [...cont.querySelectorAll('.chip[aria-pressed="true"]')].forEach(x=>x.setAttribute('aria-pressed','false'));
+          b.setAttribute('aria-pressed','true');
+        });
+      })();
+      const getRole = () => {
+        const btn = document.querySelector('#chips_role .chip[aria-pressed="true"]');
+        return btn ? btn.dataset.value : '';
+      };
+
+      const Val = (window.Chat && window.Chat.Val) ? window.Chat.Val : {
+        nonEmpty: (s) => String(s ?? '').trim().length>0,
+        phoneIL:  (s) => /^0\d{1,2}\d{7}$/.test(String(s ?? '').replace(/\D/g,'')),
+      };
+
+      function setStatus(t){ if(statusEl) statusEl.textContent = t || ''; }
+      function showErr(msg){ errBox.style.display='block'; errBox.textContent=msg; }
+      function hideErr(){ errBox.style.display='none'; errBox.textContent=''; }
+
+      // כפתור "רוצה לקרוא עוד" – גלילה קלה למעלה/למטה (ללא עומס)
+      $('moreBtn').onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // שליחת ליד
+      $('leadForm').addEventListener('submit', async (ev)=>{
+        ev.preventDefault();
+        hideErr(); thanksBox.style.display='none';
+
+        const role = getRole();
+        const firstName = $('f_first').value.trim();
+        const lastName  = $('f_last').value.trim();
+        const phone     = $('f_phone').value.replace(/[^\d]/g,'');
+
+        if(!Val.nonEmpty(role))      return showErr('בחרו: תלמיד או הורה.');
+        if(!Val.nonEmpty(firstName)) return showErr('מלאו שם פרטי.');
+        if(!Val.nonEmpty(lastName))  return showErr('מלאו שם משפחה.');
+        if(!Val.phoneIL(phone))      return showErr('מספר טלפון לא תקין.');
+
+        const payload = {
+          flow: 'info',
+          createdAt: new Date().toISOString(),
+          project: (window.APP_CONFIG||{}).PROJECT || 'Houston',
+          status: 'לטיפול',
+          role, firstName, lastName, phone
+        };
+
+        try{
+          setStatus('שולח למזכירות…');
+          const send = window.Chat?.sendLeadToSheet;
+          if (send) {
+            await send(payload);
+          } else {
+            // שליחה ישירה אם chat-core לא נטען (שמירה על עמידות)
+            await fetch((window.APP_CONFIG||{}).SHEET_API_URL, {
+              method: 'POST',
+              headers: { 'Content-Type':'text/plain;charset=utf-8' },
+              body: JSON.stringify(payload),
+              mode: 'cors',
+              redirect: 'follow',
+              keepalive: true
+            }).then(r=>r.text());
+          }
+          setStatus('');
+          thanksBox.style.display='block';
+          ev.target.reset();
+          // ניקוי בחירת הצ'יפ
+          const picked = document.querySelector('#chips_role .chip[aria-pressed="true"]');
+          picked && picked.setAttribute('aria-pressed','false');
+        } catch(e){
+          setStatus('');
+          showErr('לא הצלחנו לשלוח כרגע, נסו שוב בעוד רגע.');
+          console.error(e);
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
