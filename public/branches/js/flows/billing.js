@@ -1,348 +1,270 @@
-/* /public/branches/js/flows/billing.js
-   נתיב: "Billing – עדכון תשלום / חשבוניות"
-   הסבר: מימוש וויזארד מרובה-מסכים בהתאם לתסריט: 
-   1) זהות (תלמיד/הורה) + שם פרטי/משפחה, 2) טלפון (+ פרטי תלמיד אם הורה),
-   3) מקצוע/מסלול, 4) כיתה/יחידות/מורה, 5) נושא פנייה (כולל "אחר"), 
-   6) הערות, 7) סיכום ושליחה. 
-   שליחה ל-Google Sheets כ-POST text/plain עם status="לטיפול". */
-
+/* =========================================
+/public/branches/js/flows/billing.js
+וויזארד "Billing – חיוב/חשבוניות":
+מסך 1 – הזדהות (תלמיד/הורה, שם פרטי, שם משפחה, טלפון)
+מסך 2* – פרטי תלמיד (רק אם נבחר "הורה")
+מסך 2 – מקצוע ומורה
+מסך 3 – נושא הפנייה בחיוב/חשבוניות (בחירה; אם "אחר" נפתח תיאור חופשי)
+מסך 4 – סיכום ושליחה (status="לטיפול")
+נשען על chat-core.js עבור ולידציה ושליחה ל־Google Sheets (text/plain).
+========================================= */
 window.BillingWizard = (() => {
-  // ===== DOM refs =====
-  const $ = (id)=> document.getElementById(id);
+  const $ = (id) => document.getElementById(id);
   const stepEl   = $('step');
   const backBtn  = $('backBtn');
   const statusEl = $('statusBox');
 
-  // ===== State & nav =====
   const State = { data:{}, stack:[] };
-  const setStatus = (t='')=> { if(statusEl) statusEl.textContent = t; };
-  const push = (fn)=> { State.stack.push(fn); backBtn.disabled = State.stack.length<=1; };
-  const goBack = ()=> {
+  const setStatus = (t='') => { statusEl && (statusEl.textContent = t); };
+  const push = (fn) => { State.stack.push(fn); backBtn.disabled = State.stack.length<=1; };
+  const goBack = () => {
     if (State.stack.length>1){
       State.stack.pop();
       backBtn.disabled = State.stack.length<=1;
-      const last = State.stack[State.stack.length-1];
-      last && last();
+      State.stack[State.stack.length-1]();
     }
   };
   backBtn.onclick = goBack;
 
-  // ===== Validators & sender (מ-chat-core אם נטען) =====
-  const Val = (window.Chat && window.Chat.Val) ? window.Chat.Val : {
+  // עזרי ולידציה/שליחה מתוך chat-core.js (נדרשים מראש ב-HTML)
+  const Val  = (window.Chat && window.Chat.Val) ? window.Chat.Val : {
     nonEmpty: s => String(s??'').trim().length>0,
-    phoneIL:  s => /^0\d{1,2}\d{7}$/.test(String(s??'').replace(/\D/g,'')),
-    date:     s => /^\d{4}-\d{2}-\d{2}$/.test(s),
-    time:     s => /^\d{2}:\d{2}$/.test(s),
+    phoneIL: s => /^0\d{1,2}\d{7}$/.test(String(s??'').replace(/\D/g,'')),
   };
-  const sendLead = (payload) => (window.Chat?.sendLeadToSheet
+  const send = (payload) => (window.Chat?.sendLeadToSheet
     ? window.Chat.sendLeadToSheet(payload)
     : fetch((window.APP_CONFIG||{}).SHEET_API_URL, {
         method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
         body: JSON.stringify(payload)
-      }).then(r=>r.json())
-  );
+      }).then(r=>r.json()));
 
-  // ===== Tiny UI helpers (HTML strings) =====
-  const fieldRow = ({label,name,type='text',placeholder='',value='',required=false,id})=>{
-    const _id = id || `f_${name}`;
+  // עזרי UI קלים (תואמים למה שאתה רגיל)
+  const fieldRow = ({label, name, type='text', placeholder='', value='', required=false})=>{
+    const id = `f_${name}`;
     return `
       <div class="field">
-        <label for="${_id}">${label}${required?' *':''}</label>
-        <input id="${_id}" name="${name}" type="${type}" value="${value||''}" placeholder="${placeholder||''}" ${required?'required':''}/>
+        <label for="${id}">${label}${required?' *':''}</label>
+        <input id="${id}" name="${name}" type="${type}" placeholder="${placeholder}" value="${value||''}" ${required?'required':''}/>
       </div>`;
   };
-  const selectRow = ({label,name,options=[],required=false,id})=>{
-    const _id = id || `f_${name}`;
-    const opts = ['<option value="">— בחרו —</option>'].concat(
-      options.map(o=>{
-        const v = (typeof o==='string') ? o : (o.value ?? o.label);
-        const t = (typeof o==='string') ? o : (o.label ?? o.value);
+  const selectRow = ({label, name, options=[], required=false})=>{
+    const id = `f_${name}`;
+    const opts = ['<option value="">— בחרו —</option>']
+      .concat(options.map(o => {
+        const v = (typeof o==='string') ? o : (o.value||o.label);
+        const t = (typeof o==='string') ? o : (o.label||o.value);
         return `<option value="${String(v)}">${String(t)}</option>`;
-      })
-    ).join('');
+      })).join('');
     return `
       <div class="field">
-        <label for="${_id}">${label}${required?' *':''}</label>
-        <select id="${_id}" name="${name}" ${required?'required':''}>${opts}</select>
+        <label for="${id}">${label}${required?' *':''}</label>
+        <select id="${id}" name="${name}" ${required?'required':''}>${opts}</select>
       </div>`;
   };
-  const chipsRow = ({label,name,options=[],id})=>{
-    const chips = options.map(t=>`<button type="button" class="chip" data-value="${t}" aria-pressed="false">${t}</button>`).join('');
+  const chipsRow = ({label, name, options=[]})=>{
+    const chips = options.map(t=>`<button type="button" class="chip" data-name="${name}" data-value="${t}" aria-pressed="false">${t}</button>`).join('');
     return `
       <div class="field">
         <label>${label}</label>
-        <div class="chips" id="${id||('chips_'+name)}">${chips}</div>
+        <div class="chips" id="chips_${name}">${chips}</div>
       </div>`;
   };
-  const bindSingleChips = (containerId)=>{
-    const cont = $(containerId);
+  const bindSingleChips = (id)=>{
+    const cont = $(id);
     let picked = '';
-    cont.addEventListener('click',(ev)=>{
+    cont.addEventListener('click', (ev)=>{
       const b = ev.target.closest('.chip'); if(!b) return;
       [...cont.querySelectorAll('.chip[aria-pressed="true"]')].forEach(x=>x.setAttribute('aria-pressed','false'));
-      b.setAttribute('aria-pressed', b.getAttribute('aria-pressed')==='true' ? 'false':'true');
-      picked = (b.getAttribute('aria-pressed')==='true') ? (b.dataset.value||'') : '';
+      b.setAttribute('aria-pressed', b.getAttribute('aria-pressed')==='true' ? 'false' : 'true');
+      picked = b.getAttribute('aria-pressed')==='true' ? b.dataset.value : '';
     });
     return ()=> picked;
   };
 
-  // ===== Options =====
-  const subjects = ['מתמטיקה','אנגלית','פיזיקה','שפה','הוראה מתקנת','אנגלית מדוברת'];
-  const tracks   = ['קבוצתי','טריפל','פרטי'];
-  const grades   = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ז׳','ח׳','ט׳','י׳','י״א','י״ב','סטודנט'];
-  const topics   = [
-    'עדכון אמצעי תשלום (כרטיס אשראי)',
-    'חיוב כפול / זיכוי חסר',
-    'העברת חיוב להורה אחר',
-    'קבלת חשבונית/קבלה',
-    'שינוי פרטי חשבונית',
-    'בירור חיוב',
-    'אחר'
-  ];
+  /* ===== שלבים ===== */
 
-  // ===== Steps =====
-  function step1_identity(){
+  // מסך 1 — הזדהות
+  function step1_contact(){
     stepEl.innerHTML = `
       <div class="title-row">
-        <h3>עדכון תשלום / חשבוניות 👨‍🚀</h3>
-        <div class="muted">שלב 1/7</div>
+        <h3>פרטי הזדהות 👨‍🚀</h3>
+        <div class="muted">שלב 1/4</div>
       </div>
-      <div class="meta">ארשום כמה פרטים כדי שאוכל לעזור במהירות 🧑‍🚀</div>
-      ${chipsRow({label:'עם מי אני מדבר?', name:'role', options:['תלמיד','הורה'], id:'chips_role'})}
-      ${fieldRow({label:'שם פרטי',  name:'firstName', placeholder:'לדוגמה: חן', required:true})}
-      ${fieldRow({label:'שם משפחה', name:'lastName',  placeholder:'לדוגמה: בראונשטיין', required:true})}
+      ${chipsRow({label:'עם מי אני מדבר?', name:'role', options:['תלמיד','הורה']})}
+      ${fieldRow({label:'שם פרטי', name:'firstName', placeholder:'לדוגמה: חן', required:true})}
+      ${fieldRow({label:'שם משפחה', name:'lastName', placeholder:'לדוגמה: בראונשטיין', required:true})}
+      ${fieldRow({label:'טלפון', name:'phone', type:'tel', placeholder:'05XXXXXXXX', required:true})}
       <div class="wizard-actions">
         <button class="btn primary" id="next">המשך</button>
       </div>`;
-    push(step1_identity);
+    push(step1_contact);
 
     const getRole = bindSingleChips('chips_role');
     $('next').onclick = ()=>{
       const role = getRole();
       const firstName = $('f_firstName').value.trim();
       const lastName  = $('f_lastName').value.trim();
-      if(!Val.nonEmpty(role))      return setStatus('נא לבחור עם מי מדברים');
-      if(!Val.nonEmpty(firstName)) return setStatus('נא למלא שם פרטי');
-      if(!Val.nonEmpty(lastName))  return setStatus('נא למלא שם משפחה');
+      const phone     = $('f_phone').value.replace(/[^\d]/g,'');
+      if(!Val.nonEmpty(role))     return setStatus('נא לבחור: תלמיד/הורה');
+      if(!Val.nonEmpty(firstName))return setStatus('נא למלא שם פרטי');
+      if(!Val.nonEmpty(lastName)) return setStatus('נא למלא שם משפחה');
+      if(!Val.phoneIL(phone))     return setStatus('טלפון לא תקין');
       setStatus('');
-      Object.assign(State.data, { role, firstName, lastName });
-      step2_contactStudent();
+      Object.assign(State.data, { role, firstName, lastName, phone });
+
+      if (role === 'הורה') step2_student();
+      else {
+        // אם תלמיד, נמפה שמות תלמיד כברירת מחדל (נוח לעיבוד/דוחות)
+        Object.assign(State.data, { studentName: firstName, studentLastName: lastName });
+        step2_subjectTeacher();
+      }
     };
   }
 
-  function step2_contactStudent(){
-    const isParent = (State.data.role === 'הורה');
+  // מסך 2* — פרטי תלמיד (רק אם הורה)
+  function step2_student(){
     stepEl.innerHTML = `
       <div class="title-row">
-        <h3>פרטי קשר 👨‍🚀</h3>
-        <div class="muted">שלב 2/7</div>
+        <h3>פרטי התלמיד/ה 👨‍🚀</h3>
+        <div class="muted">שלב 2/4</div>
       </div>
-      ${fieldRow({label:'טלפון', name:'phone', type:'tel', placeholder:'05XXXXXXXX', required:true})}
-      ${isParent ? fieldRow({label:'שם פרטי התלמיד/ה', name:'studentName', placeholder:'לדוגמה: נועה', required:true}) : ''}
-      ${isParent ? fieldRow({label:'שם משפחה התלמיד/ה', name:'studentLastName', placeholder:'לדוגמה: כהן', required:true}) : ''}
+      ${fieldRow({label:'שם פרטי התלמיד/ה', name:'studentName', placeholder:'לדוגמה: נועה', required:true})}
+      ${fieldRow({label:'שם משפחה התלמיד/ה', name:'studentLastName', placeholder:'לדוגמה: לוי', required:true})}
       <div class="wizard-actions">
         <button class="btn" id="prev">חזרה</button>
         <button class="btn primary" id="next">המשך</button>
       </div>`;
-    push(step2_contactStudent);
+    push(step2_student);
 
     $('prev').onclick = goBack;
     $('next').onclick = ()=>{
-      const phone = $('f_phone').value.replace(/[^\d]/g,'');
-      if(!Val.phoneIL(phone)) return setStatus('טלפון לא תקין');
-      const patch = { phone };
-      if (isParent){
-        const sn = $('f_studentName').value.trim();
-        const sl = $('f_studentLastName').value.trim();
-        if(!Val.nonEmpty(sn)) return setStatus('נא למלא שם פרטי התלמיד/ה');
-        if(!Val.nonEmpty(sl)) return setStatus('נא למלא שם משפחה התלמיד/ה');
-        patch.studentName = sn;
-        patch.studentLastName = sl;
-      }
+      const studentName      = $('f_studentName').value.trim();
+      const studentLastName  = $('f_studentLastName').value.trim();
+      if(!Val.nonEmpty(studentName))     return setStatus('נא למלא שם תלמיד/ה');
+      if(!Val.nonEmpty(studentLastName)) return setStatus('נא למלא שם משפחה של התלמיד/ה');
       setStatus('');
-      Object.assign(State.data, patch);
-      step3_subjectTrack();
+      Object.assign(State.data, { studentName, studentLastName });
+      step2_subjectTeacher();
     };
   }
 
-  function step3_subjectTrack(){
+  // מסך 2 — מקצוע ומורה
+  function step2_subjectTeacher(){
+    const subjects = ['מתמטיקה','אנגלית','פיזיקה','שפה','הוראה מתקנת','אנגלית מדוברת'];
     stepEl.innerHTML = `
       <div class="title-row">
-        <h3>פרטי המנוי 👨‍🚀</h3>
-        <div class="muted">שלב 3/7</div>
+        <h3>מקצוע ומורה 👨‍🚀</h3>
+        <div class="muted">שלב ${State.data.role==='הורה'? '3':'2'}/4</div>
       </div>
       ${selectRow({label:'מקצוע', name:'subject', options:subjects, required:true})}
-      ${chipsRow({label:'מסלול למידה (רשות)', name:'track', options:tracks, id:'chips_track'})}
+      ${fieldRow({label:'שם המורה במרכז בראונשטיין (רשות)', name:'teacher', placeholder:'לדוגמה: לירז', required:false})}
       <div class="wizard-actions">
         <button class="btn" id="prev">חזרה</button>
         <button class="btn primary" id="next">המשך</button>
       </div>`;
-    push(step3_subjectTrack);
+    push(step2_subjectTeacher);
 
-    const getTrack = bindSingleChips('chips_track');
     $('prev').onclick = goBack;
     $('next').onclick = ()=>{
       const subject = $('f_subject').value;
-      const track   = getTrack();
+      const teacher = $('f_teacher').value.trim();
       if(!Val.nonEmpty(subject)) return setStatus('נא לבחור מקצוע');
       setStatus('');
-      Object.assign(State.data, { subject, track });
-      step4_gradeUnitsTeacher();
+      Object.assign(State.data, { subject, teacher });
+      step3_topic();
     };
   }
 
-  function step4_gradeUnitsTeacher(){
+  // מסך 3 — נושא הפנייה (חיוב/חשבוניות)
+  function step3_topic(){
+    const topics = [
+      'עדכון אמצעי תשלום (כרטיס אשראי)',
+      'חיוב כפול / זיכוי חסר',
+      'העברת חיוב להורה אחר',
+      'קבלת חשבונית/קבלה',
+      'שינוי פרטי חשבונית',
+      'בירור חיוב',
+      'אחר'
+    ];
     stepEl.innerHTML = `
       <div class="title-row">
-        <h3>כיתה / יחידות / מורה 👨‍🚀</h3>
-        <div class="muted">שלב 4/7</div>
+        <h3>על מה תרצו לדבר? 👨‍🚀</h3>
+        <div class="muted">שלב ${State.data.role==='הורה'? '4':'3'}/4</div>
       </div>
-      ${selectRow({label:'כיתה', name:'grade', options:grades, required:true})}
-      <div id="unitsWrap" style="display:none">
-        ${chipsRow({label:'יחידות (לכיתות י/י״א/י״ב)', name:'units', options:['3','4','5'], id:'chips_units'})}
+      ${selectRow({label:'נושא הפנייה', name:'topic', options:topics, required:true})}
+      <div class="field" id="otherWrap" style="display:none">
+        <label for="f_other">פרטו (רשות)</label>
+        <textarea id="f_other" rows="3" placeholder="כתבו כאן כל פרט שיעזור לנו לטפל בבקשה"></textarea>
       </div>
-      ${fieldRow({label:'שם המורה במרכז הלמידה (רשות)', name:'teacher', placeholder:'לדוגמה: לירז'})}
       <div class="wizard-actions">
         <button class="btn" id="prev">חזרה</button>
         <button class="btn primary" id="next">המשך</button>
       </div>`;
-    push(step4_gradeUnitsTeacher);
+    push(step3_topic);
 
-    const gradeSel = $('f_grade');
-    const unitsWrap = $('unitsWrap');
-    const getUnits = bindSingleChips('chips_units');
-
-    const toggleUnits = ()=>{
-      const g = gradeSel.value;
-      unitsWrap.style.display = (['י׳','י״א','י״ב'].includes(g)) ? '' : 'none';
-    };
-    gradeSel.addEventListener('change', toggleUnits);
-    toggleUnits();
-
-    $('prev').onclick = goBack;
-    $('next').onclick = ()=>{
-      const grade = gradeSel.value;
-      const needUnits = ['י׳','י״א','י״ב'].includes(grade);
-      const units = needUnits ? getUnits() : '';
-      const teacher = $('f_teacher').value.trim();
-      if(!Val.nonEmpty(grade)) return setStatus('נא לבחור כיתה');
-      if(needUnits && !Val.nonEmpty(units)) return setStatus('נא לבחור מספר יחידות');
-      setStatus('');
-      Object.assign(State.data, { grade, units, teacher });
-      step5_topic();
-    };
-  }
-
-  function step5_topic(){
-    stepEl.innerHTML = `
-      <div class="title-row">
-        <h3>נושא הפנייה 👨‍🚀</h3>
-        <div class="muted">שלב 5/7</div>
-      </div>
-      ${selectRow({label:'נושא', name:'topic', options:topics, required:true})}
-      ${fieldRow({label:'פרטו (אם בחרתם "אחר")', name:'topicOther', placeholder:'רשות', id:'f_topicOther'})}
-      <div class="wizard-actions">
-        <button class="btn" id="prev">חזרה</button>
-        <button class="btn primary" id="next">המשך</button>
-      </div>`;
-    push(step5_topic);
-
-    const topicSel = $('f_topic');
-    const otherEl  = $('f_topicOther');
-    const toggleOther = ()=>{
-      const isOther = (topicSel.value === 'אחר');
-      otherEl.parentElement.style.display = isOther ? '' : 'none';
-    };
-    toggleOther();
-    topicSel.addEventListener('change', toggleOther);
+    const topicSel  = $('f_topic');
+    const otherWrap = $('otherWrap');
+    topicSel.addEventListener('change', ()=> {
+      otherWrap.style.display = (topicSel.value === 'אחר') ? '' : 'none';
+    });
 
     $('prev').onclick = goBack;
     $('next').onclick = ()=>{
       const topic = topicSel.value;
-      if(!Val.nonEmpty(topic)) return setStatus('נא לבחור נושא פנייה');
-      const topicOther = (topic==='אחר') ? (otherEl.value||'').trim() : '';
+      const notes = (topic === 'אחר') ? ($('f_other').value || '').trim() : '';
+      if(!Val.nonEmpty(topic)) return setStatus('נא לבחור נושא');
       setStatus('');
-      Object.assign(State.data, { topic, topicOther });
-      step6_notes();
+      Object.assign(State.data, { topic, notes });
+      step4_summary();
     };
   }
 
-  function step6_notes(){
-    stepEl.innerHTML = `
-      <div class="title-row">
-        <h3>הערות נוספות למזכירות 👨‍🚀</h3>
-        <div class="muted">שלב 6/7</div>
-      </div>
-      <div class="field">
-        <label for="f_notes">הערות (רשות)</label>
-        <textarea id="f_notes" rows="3" placeholder="פרטים שיעזרו לנו לטפל מהר יותר"></textarea>
-      </div>
-      <div class="wizard-actions">
-        <button class="btn" id="prev">חזרה</button>
-        <button class="btn primary" id="next">המשך</button>
-      </div>`;
-    push(step6_notes);
-
-    $('prev').onclick = goBack;
-    $('next').onclick = ()=>{
-      State.data.notes = ($('f_notes').value||'').trim();
-      setStatus('');
-      step7_summary();
-    };
-  }
-
-  function step7_summary(){
+  // מסך 4 — סיכום ושליחה
+  function step4_summary(){
     const d = State.data;
-    const summaryRows = [
-      ['מי מדבר', d.role],
+    const rows = [
+      ['סוג פונה', d.role],
       ['שם פרטי', d.firstName],
       ['שם משפחה', d.lastName],
       ['טלפון', d.phone],
-      ...(d.role==='הורה' ? [['שם התלמיד/ה', d.studentName], ['שם משפחה התלמיד/ה', d.studentLastName]] : []),
+      ...(d.studentName || d.studentLastName ? [['שם התלמיד/ה', `${d.studentName||''} ${d.studentLastName||''}`.trim()]]: []),
       ['מקצוע', d.subject],
-      ['מסלול', d.track||''],
-      ['כיתה', d.grade],
-      ...(d.units ? [['יחידות', d.units]] : []),
-      ['שם מורה', d.teacher||''],
-      ['נושא', d.topic],
-      ...(d.topic==='אחר' && d.topicOther ? [['פירוט (אחר)', d.topicOther]] : []),
-      ...(d.notes ? [['הערות', d.notes]] : [])
+      ['מורה', d.teacher || '-'],
+      ['נושא הפנייה', d.topic],
+      ...(d.notes ? [['פרטים נוספים', d.notes]] : []),
     ];
-
     stepEl.innerHTML = `
       <div class="title-row">
         <h3>סיכום ושליחה 👨‍🚀</h3>
-        <div class="muted">שלב 7/7</div>
+        <div class="muted">סיום</div>
       </div>
       <div class="summary">
-        ${summaryRows.map(([k,v])=>`<div><strong>${k}:</strong> ${v||'-'}</div>`).join('')}
+        ${rows.map(([k,v])=>`<div><strong>${k}:</strong> ${v||'-'}</div>`).join('')}
       </div>
       <div class="wizard-actions">
         <button class="btn" id="prev">חזרה</button>
         <button class="btn primary" id="send">אישור ושליחה למזכירות 📤</button>
       </div>`;
-    push(step7_summary);
+    push(step4_summary);
 
     $('prev').onclick = goBack;
     $('send').onclick = submit;
   }
 
   async function submit(){
-    // ולידציות אחרונות
+    // ולידציה אחרונה זהירה
     const d = State.data, errs=[];
-    if(!Val.nonEmpty(d.role))       errs.push('role');
-    if(!Val.nonEmpty(d.firstName))  errs.push('firstName');
-    if(!Val.nonEmpty(d.lastName))   errs.push('lastName');
-    if(!Val.phoneIL(d.phone))       errs.push('phone');
+    if(!Val.nonEmpty(d.role))      errs.push('role');
+    if(!Val.nonEmpty(d.firstName)) errs.push('firstName');
+    if(!Val.nonEmpty(d.lastName))  errs.push('lastName');
+    if(!Val.phoneIL(d.phone))      errs.push('phone');
     if(d.role==='הורה'){
-      if(!Val.nonEmpty(d.studentName))      errs.push('studentName');
-      if(!Val.nonEmpty(d.studentLastName))  errs.push('studentLastName');
+      if(!Val.nonEmpty(d.studentName))     errs.push('studentName');
+      if(!Val.nonEmpty(d.studentLastName)) errs.push('studentLastName');
     }
-    if(!Val.nonEmpty(d.subject))    errs.push('subject');
-    if(!Val.nonEmpty(d.grade))      errs.push('grade');
-    if(['י׳','י״א','י״ב'].includes(d.grade||'') && !Val.nonEmpty(d.units)) errs.push('units');
-    if(!Val.nonEmpty(d.topic))      errs.push('topic');
-    if(errs.length) return setStatus('חסר/לא תקין: ' + errs.join(', '));
+    if(!Val.nonEmpty(d.subject))   errs.push('subject');
+    if(!Val.nonEmpty(d.topic))     errs.push('topic');
+    if(errs.length) return setStatus('חסר/לא תקין: '+errs.join(', '));
 
     const payload = {
       flow: 'billing',
@@ -350,24 +272,29 @@ window.BillingWizard = (() => {
       project: (window.APP_CONFIG||{}).PROJECT || 'Houston',
       status: 'לטיפול',
       source: 'יוסטון – אתר',
-      // מזהה פונה
-      firstName: d.firstName, lastName: d.lastName, phone: d.phone,
-      role: d.role || '',
-      // פרטי תלמיד אם הורה
+
+      // מזדהה
+      role: d.role,
+      firstName: d.firstName,
+      lastName: d.lastName,
+      phone: d.phone,
+
+      // תלמיד (אם רלוונטי; לתלמיד נמלא כבר במסך 1 כברירת מחדל)
       studentName: d.studentName || '',
       studentLastName: d.studentLastName || '',
-      // פרטי מנוי
-      subject: d.subject, track: d.track || '',
-      grade: d.grade, units: d.units || '', teacher: d.teacher || '',
-      // נושא
-      topic: d.topic, topicOther: d.topic==='אחר' ? (d.topicOther||'') : '',
-      // הערות
+
+      // הקשר לימודי
+      subject: d.subject,
+      teacher: d.teacher || '',
+
+      // תוכן בילינג
+      topic: d.topic,
       notes: d.notes || ''
     };
 
     try{
       setStatus('שולח ל־Google Sheets…');
-      const res = await sendLead(payload);
+      const res = await send(payload);
       if(res && res.ok){
         setStatus('נשלח בהצלחה');
         stepEl.innerHTML = `
@@ -376,12 +303,12 @@ window.BillingWizard = (() => {
             <button class="btn" onclick="location.href='index.html'">חזרה לתפריט מנוי/ה</button>
           </div>`;
         backBtn.disabled = true;
-        State.stack = [stepEl.innerHTML]; // נועלים ניווט לאחור אחרי שליחה
+        State.stack = [stepEl.innerHTML];
       }else{
         throw new Error((res && res.error) || 'server_error');
       }
     }catch(err){
-      setStatus('שגיאה: ' + err.message);
+      setStatus('שגיאה: ' + (err && err.message || err));
     }
   }
 
@@ -390,7 +317,7 @@ window.BillingWizard = (() => {
     State.stack = [];
     backBtn.disabled = true;
     setStatus('');
-    step1_identity();
+    step1_contact();
   }
 
   return { start };
