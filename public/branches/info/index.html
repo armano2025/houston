@@ -1,6 +1,6 @@
 <!-- /public/branches/info/index.html
-     דף "פרטי מנוי חודשי – מתעניינים": מינימום פרטים + הפניה לאתר החיצוני.
-     שומר עקביות עיצובית עם שאר המערכת (styles.light.css + chat-core.js). -->
+     דף נחיתה "פרטי מנוי חודשי" – פתיחה מיידית של עמוד המידע + איסוף פרטי קשר קצרים.
+     שומר על styles.light.css. שליחה ל-GAS לא חוסמת פתיחת הקישור. -->
 
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
@@ -9,26 +9,38 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>יוסטון 👨‍🚀 – פרטי מנוי חודשי</title>
   <meta name="theme-color" content="#5b7cfa" />
+  <meta name="description" content="מסלולים, מחירים, שעות ויתרונות מרכז הלמידה בראונשטיין. פתחו את עמוד המידע וקבלו מענה מהיר." />
   <link rel="stylesheet" href="../../styles.light.css?v=2" />
   <style>
-    .wizard-wrap{ max-width:720px; margin:0 auto }
-    .wizard-step{ padding:18px 22px 24px }
-    .wizard-actions{ display:flex; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap }
-    .title-row{ display:flex; align-items:center; justify-content:space-between; gap:10px }
-    .muted{ color:var(--muted) }
+    .hero{ display:grid; gap:10px; }
+    .hero h1{ margin:0; font-size:1.6rem }
+    .badges{ display:flex; gap:8px; flex-wrap:wrap }
+    .badge{ background:var(--chip); border:1px solid var(--chip-brd); border-radius:999px; padding:7px 10px; font-weight:600 }
+    .cta-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:6px }
+    .grid3{ display:grid; gap:var(--gap); grid-template-columns:1fr; }
+    @media (min-width:820px){ .grid3{ grid-template-columns:1fr 1fr 1fr } }
+    .tile.min{ padding:14px }
+    .faq dt{ font-weight:700; margin-top:8px }
+    .faq dd{ margin:0 0 8px 0; color:var(--muted) }
+    .sticky-cta{ position:sticky; bottom:0; inset-inline:0; padding:10px; background:linear-gradient(180deg, transparent, rgba(0,0,0,.04)); backdrop-filter:blur(6px) }
+    /* טופס קצר */
+    .mini-form .chips{ margin-top:4px }
+    .mini-form .row{ gap:8px }
+    .mini-form input{ font-size:16px } /* מונע זום במובייל */
   </style>
 </head>
 <body>
   <div class="wrap">
-    <section class="card wizard-wrap">
-
+    <section class="card">
       <!-- טופ־בר -->
-      <div class="topbar" style="padding:12px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(255,255,255,.45),rgba(255,255,255,.2));backdrop-filter: blur(6px);display:flex;gap:8px;justify-content:space-between;align-items:center">
-        <div class="right" style="display:flex;gap:8px;align-items:center">
-          <button class="btn" id="backBtn" disabled>חזרה</button>
-        </div>
-        <div class="left" style="display:flex;gap:8px;align-items:center">
-          <button class="btn ghost" onclick="location.href='../../index.html'">לתפריט ראשי</button>
+      <div class="topbar" style="padding:12px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(255,255,255,.45),rgba(255,255,255,.2));backdrop-filter: blur(6px);">
+        <div style="display:flex;gap:8px;justify-content:space-between;align-items:center">
+          <div class="right" style="display:flex;gap:8px;align-items:center">
+            <button class="btn" onclick="history.back()">חזרה</button>
+          </div>
+          <div class="left" style="display:flex;gap:8px;align-items:center">
+            <button class="btn ghost" onclick="location.href='../../index.html'">לתפריט ראשי</button>
+          </div>
         </div>
       </div>
 
@@ -38,38 +50,104 @@
           <div class="logo" aria-hidden="true">HB</div>
           <div>
             <div class="title">פרטי מנוי חודשי 👨‍🚀</div>
-            <p class="subtitle">נרשום 3 פרטים קצרים ואז נעבור לעמוד המידע</p>
+            <p class="subtitle">נרשום 3 פרטים קצרים — ואז נעבור לעמוד המידע</p>
           </div>
         </div>
       </div>
 
       <!-- תוכן -->
-      <div class="wizard-step body" id="step"></div>
+      <div class="body">
+        <!-- HERO -->
+        <div class="bubble bot hero">
+          <h1>ללמוד חכם, יחד. 📚</h1>
+          <div class="badges">
+            <span class="badge">מסלולים לקבוצה / טריפל / פרטי</span>
+            <span class="badge">מורים מדהימים ומנוסים</span>
+            <span class="badge">שקיפות מחירים מלאה</span>
+          </div>
+          <div class="cta-row">
+            <a id="fallbackLink" class="btn primary" href="https://wordpress-1184560-4777160.cloudwaysapps.com/" target="_blank" rel="noopener">פתח עמוד מידע</a>
+            <button class="btn ghost" type="button" onclick="document.getElementById('leadArea').scrollIntoView({behavior:'smooth'})">או השאירו פרטים ונפתח יחד</button>
+          </div>
+        </div>
 
-      <!-- פוטר סטטוס -->
-      <div class="footerbar">
-        <span id="statusBox" class="muted" aria-live="polite"></span>
+        <!-- טופס קצר (תלמיד/הורה + שם + טלפון) -->
+        <div id="leadArea" class="bubble user mini-form">
+          <form id="infoForm" novalidate>
+            <div class="field">
+              <label>עם מי אנחנו בקשר?</label>
+              <div class="chips" id="chips_role">
+                <button type="button" class="chip" data-value="תלמיד" aria-pressed="false">תלמיד</button>
+                <button type="button" class="chip" data-value="הורה" aria-pressed="false">הורה</button>
+              </div>
+            </div>
+            <div class="row">
+              <div style="flex:1">
+                <label for="f_first">שם פרטי *</label>
+                <input id="f_first" type="text" placeholder="לדוגמה: חן" required />
+              </div>
+              <div style="flex:1">
+                <label for="f_last">שם משפחה *</label>
+                <input id="f_last" type="text" placeholder="לדוגמה: בראונשטיין" required />
+              </div>
+            </div>
+            <div class="row">
+              <div style="flex:1">
+                <label for="f_phone">טלפון *</label>
+                <input id="f_phone" type="tel" inputmode="tel" placeholder="05XXXXXXXX" required />
+              </div>
+            </div>
+            <div class="cta-row">
+              <button id="openInfo" class="btn primary" type="submit">פתח עמוד מידע בחלון חדש</button>
+              <button id="openOnly" class="btn" type="button">פתח בלי להשאיר פרטים</button>
+            </div>
+            <div id="statusBox" class="meta" aria-live="polite"></div>
+          </form>
+        </div>
+
+        <!-- יתרונות מהירים -->
+        <div class="grid3" style="margin-top:8px">
+          <div class="tile min">
+            <h3>קבוצה / טריפל / פרטי</h3>
+            <p class="meta">בוחרים את הקצב והמסגרת שמתאימים — אפשר לשלב ולשנות.</p>
+          </div>
+          <div class="tile min">
+            <h3>מורים מעולים</h3>
+            <p class="meta">צוות מנוסה, יחס אישי והכנה לבגרויות בצורה יעילה.</p>
+          </div>
+          <div class="tile min">
+            <h3>שקיפות מלאה</h3>
+            <p class="meta">מחירים, תדירות, נוכחות ומעקב — הכל ברור ופשוט.</p>
+          </div>
+        </div>
+
+        <!-- FAQ קצר -->
+        <div class="bubble bot" style="margin-top:10px">
+          <h3 style="margin-top:0">שאלות נפוצות</h3>
+          <dl class="faq">
+            <dt>איך מתחילים?</dt>
+            <dd>פותחים את עמוד המידע, בוחרים מסלול ומשאירים פרטים — ונחזור אליכם לתיאום.</dd>
+            <dt>אפשר לשיעור ניסיון?</dt>
+            <dd>כן, לרוב אפשר לתאם שיעור היכרות קצר. כל הפרטים בעמוד.</dd>
+            <dt>אפשר לשנות מסלול בהמשך?</dt>
+            <dd>ברור. אנחנו גמישים ונדאג שהמסלול יתאים לקצב הלמידה.</dd>
+          </dl>
+        </div>
+      </div>
+
+      <!-- CTA דביק -->
+      <div class="sticky-cta">
+        <div class="row" style="justify-content:space-between">
+          <span class="meta">מוכנים? פותחים את עמוד המידע 👨‍🚀</span>
+          <a class="btn primary" href="https://wordpress-1184560-4777160.cloudwaysapps.com/" target="_blank" rel="noopener">פתח עכשיו</a>
+        </div>
       </div>
 
     </section>
   </div>
 
-  <!-- קונפיג (Webhook + Project + קישור היעד) -->
-  <script>
-    window.APP_CONFIG = {
-      SHEET_API_URL: 'https://script.google.com/macros/s/AKfycbxRiJ_uMNpIJru-nNClAi787sA07hQSu7TX4cQEAm3_w3-dO2Hmp39ISxh81SqudA/exec',
-      PROJECT: 'Houston',
-      INFO_REDIRECT: 'https://wordpress-1184560-4777160.cloudwaysapps.com/'
-    };
-  </script>
-
-  <!-- chat-core לולידציה/שליחה -->
+  <!-- אם chat-core קיים – נשתמש בו לשליחה -->
   <script src="../js/chat-core.js?v=3"></script>
-
-  <!-- הזרימה (קלילה) -->
-  <script src="../js/flows/info.js?v=1"></script>
-  <script>
-    window.addEventListener('DOMContentLoaded', () => window.InfoWizard?.start?.());
-  </script>
+  <script src="./info.js?v=1"></script>
 </body>
 </html>
