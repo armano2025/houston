@@ -1,53 +1,62 @@
-<!-- /public/index.html – דף הבית (עברית בלבד), ממותג ומונגש -->
+<!-- /public/index.html
+     יוסטון 👨‍🚀 – דף הבית (2025)
+     • "שיעור חד־פעמי" מודגש כ"ללא מנוי"
+     • "מנויים" כולל תיאור מלא עם שיעור תגבור
+     • הכל בעברית
+-->
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>יוסטון 👨‍🚀 – דף הבית</title>
-  <meta name="theme-color" content="#2f5cff" />
-  <meta name="description" content="יוסטון – הבוט של מרכז הלמידה בראונשטיין: שיעור חד־פעמי, פעולות למנויים ומידע על מנוי חודשי." />
+  <meta name="theme-color" content="#5b7cfa" />
+  <meta name="description" content="יוסטון – בוט השירות של מרכז הלמידה בראונשטיין: שיעור חד־פעמי, פעולות למנויים, ופרטי מנוי חודשי." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./styles.light.css?v=4" />
 </head>
 <body>
   <main class="wrap">
     <section class="card home">
       <header class="head">
-        <div class="brand">
-          <div class="logo" aria-hidden="true">
-            <img src="./assets/brand-logo.svg" alt="" loading="eager" decoding="async" />
-          </div>
-          <h1 class="title">יוסטון 👨‍🚀</h1>
-          <p class="subtitle">בוט השירות של מרכז הלמידה בראונשטיין</p>
+        <div class="brand" aria-label="יוסטון – מרכז הלמידה בראונשטיין">
+          <div class="title">יוסטון <span aria-hidden="true">👨‍🚀</span></div>
+          <div class="logo" aria-hidden="true">B</div>
         </div>
+        <p class="subtitle">בוט השירות של מרכז הלמידה בראונשטיין</p>
       </header>
 
       <div class="body">
-        <div class="bubble bot" role="status" aria-live="polite">
+        <div class="bubble" role="status" aria-live="polite">
           היי, איך אפשר לעזור היום? 👨‍🚀
         </div>
 
         <!-- תפריט ראשי -->
         <nav class="grid" aria-label="תפריט ראשי">
-          <!-- שיעור חד־פעמי – מודגש -->
-          <a class="tile tile--highlight" href="./branches/branch1/boost-onetime.html" aria-label="שיעור חד־פעמי על בסיס מקום פנוי">
+          <!-- CTA: ללא מנוי -->
+          <a class="tile cta" href="./branches/branch1/boost-onetime.html" aria-label="שיעור חד־פעמי – ללא מנוי">
+            <div class="kicker solid">ללא מנוי</div>
             <h3>שיעור חד־פעמי</h3>
-            <p>על בסיס מקום פנוי</p>
+            <p>על בסיס מקום פנוי • הרשמה מהירה</p>
           </a>
 
           <!-- מנויים -->
-          <a class="tile" href="./branches/branch3/index.html" aria-label="פעולות למנויים">
+          <a class="tile" href="./branches/branch3/index.html" aria-label="מנויים – פעולות למנוי קיים">
+            <div class="kicker">למנויים</div>
             <h3>מנויים</h3>
-            <p>תפריט פעולות למנוי/ה</p>
+            <p>
+              השלמת שיעור, שינוי קבוע, עדכון תשלום/חשבוניות, הודעה למזכירות,
+              ביטול מנוי, וגם שיעור תגבור
+            </p>
           </a>
 
           <!-- פרטי מנוי חודשי -->
-          <a class="tile" href="./branches/info/index.html" aria-label="פרטי מנוי חודשי">
+          <a class="tile" href="./branches/info/index.html" aria-label="פרטי מנוי חודשי – מידע והרשמה">
+            <div class="kicker">למתעניינים</div>
             <h3>פרטי מנוי חודשי</h3>
-            <p>מידע והרשמה</p>
+            <p>מידע והרשמה למסלול קבוע</p>
           </a>
         </nav>
       </div>
