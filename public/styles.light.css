@@ -1,16 +1,13 @@
 /* /public/styles.light.css
-   יוסטון 👨‍🚀 – ערכת אור (RTL), ממותגת לבראונשטיין (B) עם קריאות מובייל, AA ניגודיות.
+   יוסטון 👨‍🚀 – ערכת אור RTL, ממותגת לבראונשטיין. רספונסיבי, נגישות AA, מובייל־פרסט.
 */
 
 /* ========= Design Tokens ========= */
 :root{
-  /* פלטת מותג (מבוסס על הלוגו) */
-  --brand:#2f5cff;           /* כחול עיקרי לכפתורי Primary (כהה מעט לקריאות על לבן) */
-  --brand-2:#18c6e3;         /* טורקיז משלים */
-  --brand-teal:#10b981;      /* ירקרק */
-  --brand-yellow:#f59e0b;    /* צהוב */
-  --brand-orange:#f97316;    /* כתום */
-  --brand-magenta:#ec4899;   /* מג’נטה */
+  /* מותג – מתוך הלוגו */
+  --brand:#2f5cff;      /* כחול עיקרי */
+  --brand-2:#18c6e3;    /* טורקיז משלים */
+  --brand-mag:#ec4899;  /* מג’נטה עדינה להיילייטים */
 
   /* בסיס */
   --bg:#f6f8fb;
@@ -59,7 +56,7 @@ body{
   background:
     radial-gradient(1100px 700px at 12% -20%, color-mix(in oklab, var(--brand) 20%, transparent), transparent 65%),
     radial-gradient(900px 600px at 120% 5%, color-mix(in oklab, var(--brand-2) 22%, transparent), transparent 55%),
-    radial-gradient(900px 600px at -10% 110%, color-mix(in oklab, var(--brand-magenta) 12%, transparent), transparent 60%),
+    radial-gradient(900px 600px at -10% 110%, color-mix(in oklab, var(--brand-mag) 16%, transparent), transparent 60%),
     var(--bg);
   color:var(--text);
 }
@@ -67,7 +64,7 @@ body{
 /* ========= Layout ========= */
 .wrap{ min-height:100dvh; display:grid; place-items:center; padding:24px }
 .card{
-  width:min(720px,100%); /* קריא יותר */
+  width:min(720px,100%);
   background:var(--card);
   -webkit-backdrop-filter:var(--glass); backdrop-filter:var(--glass);
   border:1px solid var(--border); border-radius:24px; box-shadow:var(--shadow);
@@ -76,10 +73,11 @@ body{
 .head{ padding:22px 22px 0 }
 .brand{ display:flex; align-items:center; gap:12px; flex-wrap:wrap }
 .logo{
-  width:44px; height:44px; border-radius:12px; display:grid; place-items:center;
-  background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; font-weight:800; letter-spacing:1px;
+  width:48px; height:48px; border-radius:12px; display:grid; place-items:center;
+  background:linear-gradient(135deg,var(--brand),var(--brand-2));
 }
-.title{ font-size:var(--fs-title); font-weight:700 }
+.logo img{ width:100%; height:100%; display:block; border-radius:12px }
+.title{ font-size:var(--fs-title); font-weight:700; margin:0 }
 .subtitle{ margin:0; color:var(--muted); font-size:var(--fs-sm) }
 .body{ padding:18px 22px 24px }
 
@@ -91,7 +89,6 @@ body{
 }
 @media (prefers-color-scheme: dark){ .bubble{ background:rgba(255,255,255,0.06) } }
 .bubble.bot{ border-style:dashed }
-.bubble.user{ margin-inline-start:auto }
 
 /* ========= Grid & Tiles ========= */
 .grid{ margin-top:12px; display:grid; gap:var(--gap); grid-template-columns:1fr }
@@ -100,7 +97,7 @@ body{
 
 .tile{
   display:block; text-decoration:none; color:inherit;
-  background:linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.66));
+  background:linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.68));
   border:1px solid var(--border); border-radius:16px; padding:18px;
   min-height:86px;
   transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
@@ -120,16 +117,14 @@ body{
   .tile{ transition:none } .tile:hover,.tile:focus-visible{ transform:none; box-shadow:none }
 }
 
-/* וריאנט מודגש לאריח חשוב (שיעור חד-פעמי) */
+/* אריח מודגש */
 .tile--highlight{
-  border-color: color-mix(in oklab, var(--brand) 50%, var(--border));
+  border-color: color-mix(in oklab, var(--brand) 55%, var(--border));
   box-shadow:0 10px 28px rgba(47,92,255,.12);
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.75));
+  background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,255,255,.78));
 }
 
 /* ========= Controls ========= */
-.row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap }
 .btn{
   appearance:none; -webkit-appearance:none;
   border:1px solid var(--border); background:#fff; color:var(--text);
@@ -141,18 +136,8 @@ body{
   background:linear-gradient(135deg,var(--brand),var(--brand-2));
   color:#fff; border-color:transparent;
 }
-.btn.ghost{ background:transparent }
 
-/* ========= Chips ========= */
-.chips{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px }
-.chip{
-  padding:9px 12px; border-radius:999px; background:var(--chip);
-  border:1px solid var(--chip-brd); cursor:pointer; user-select:none;
-  font-size:var(--fs-base); line-height:1;
-}
-.chip[aria-pressed="true"]{ outline:2px solid var(--brand); outline-offset:1px }
-
-/* ========= Form Fields ========= */
+/* ========= Form ========= */
 .field{ margin:12px 0 }
 label{ display:block; font-weight:700; margin-bottom:6px; font-size:var(--fs-base) }
 input,select,textarea{
@@ -162,28 +147,9 @@ input,select,textarea{
 }
 @supports (-webkit-touch-callout:none){ input,select,textarea{ font-size:16px } }
 @media (prefers-color-scheme: dark){ input,select,textarea{ background:rgba(255,255,255,0.06) } }
-input[type="date"],input[type="time"]{ padding:10px 12px }
 input:focus,select:focus,textarea:focus{
   outline:none; box-shadow:0 0 0 4px color-mix(in oklab, var(--brand) 25%, transparent);
   border-color: color-mix(in oklab, var(--brand) 60%, var(--border));
-}
-input:invalid,select:invalid,textarea:invalid{ border-color:#ef4444 }
-
-/* ========= Footer / Status ========= */
-.meta{ color:var(--muted); font-size:var(--fs-sm) }
-.footerbar{
-  position:sticky; bottom:0; inset-inline:0; display:flex; gap:10px; padding:10px;
-  background:linear-gradient(180deg, transparent, rgba(0,0,0,.03)); backdrop-filter:blur(6px);
-}
-.status{ font-size:var(--fs-sm); color:var(--muted) }
-.status.ok{ color:var(--success) }
-.status.err{ color:var(--danger) }
-.notice.success{ color:var(--success) }
-.notice.danger{ color:var(--danger) }
-.topbar{ display:flex; justify-content:space-between; gap:10px; margin-bottom:10px }
-.badge{
-  display:inline-block; padding:8px 12px; border-radius:999px;
-  background:var(--chip); border:1px solid var(--chip-brd); font-weight:700;
 }
 
 /* ========= Utilities ========= */
