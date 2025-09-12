@@ -1,16 +1,23 @@
-/* =========================================
-/public/branches/js/flows/billing.js
-וויזארד "Billing – חיוב/חשבוניות" (פישוט זרימה):
-מסך 1 – הזדהות (תלמיד/הורה, שם פרטי, שם משפחה, טלפון)
-מסך 2 – נושא הפנייה בחיוב/חשבוניות (אם "אחר" נפתח תיאור חופשי)
-מסך 3 – סיכום ושליחה (status="לטיפול")
-נשען על chat-core.js עבור ולידציה ושליחה ל־Google Sheets (text/plain).
-========================================= */
+/* /public/branches/js/flows/billing.js
+   Billing – חיוב/חשבוניות (2025)
+   שיפורים: לוגו קבוע בפינה, כפתורים אחידים גדולים, 👨‍🚀 בכל טקסט,
+   ובלי זום מעצבן – נשען על styles.light.css (16px+ לשדות).
+*/
 window.BillingWizard = (() => {
   const $ = (id) => document.getElementById(id);
   const stepEl   = $('step');
   const backBtn  = $('backBtn');
   const statusEl = $('statusBox');
+
+  /* לוגו קבוע בפינה הימנית־עליונה (B, ללא שחור) – מוזרק ללא תלות ב-HTML */
+  function ensureTopLogo(){
+    if (document.getElementById('toplogo')) return;
+    const d = document.createElement('div');
+    d.id='toplogo'; d.className='toplogo'; d.setAttribute('aria-label','בראונשטיין');
+    document.body.appendChild(d);
+    document.body.classList.add('has-toplogo');
+  }
+  ensureTopLogo();
 
   const State = { data:{}, stack:[] };
   const setStatus = (t='') => { statusEl && (statusEl.textContent = t); };
@@ -22,9 +29,9 @@ window.BillingWizard = (() => {
       State.stack[State.stack.length-1]();
     }
   };
-  backBtn && (backBtn.onclick = goBack);
+  backBtn.onclick = goBack;
 
-  // עזרי ולידציה/שליחה מתוך chat-core.js (נדרשים מראש ב-HTML)
+  // Validators / Sender
   const Val  = (window.Chat && window.Chat.Val) ? window.Chat.Val : {
     nonEmpty: s => String(s??'').trim().length>0,
     phoneIL: s => /^0\d{1,2}\d{7}$/.test(String(s??'').replace(/\D/g,'')),
@@ -36,7 +43,7 @@ window.BillingWizard = (() => {
         body: JSON.stringify(payload)
       }).then(r=>r.json()));
 
-  // UI helpers (שורות טופס/צ'יפים)
+  // UI helpers
   const fieldRow = ({label, name, type='text', placeholder='', value='', required=false})=>{
     const id = `f_${name}`;
     return `
@@ -81,14 +88,14 @@ window.BillingWizard = (() => {
 
   /* ===== שלבים ===== */
 
-  // מסך 1 — הזדהות
+  // 1 — הזדהות
   function step1_contact(){
     stepEl.innerHTML = `
       <div class="title-row">
         <h3>פרטי הזדהות 👨‍🚀</h3>
         <div class="muted">שלב 1/3</div>
       </div>
-      ${chipsRow({label:'עם מי אני מדבר?', name:'role', options:['תלמיד','הורה']})}
+      ${chipsRow({label:'עם מי אנחנו מדברים?', name:'role', options:['תלמיד','הורה']})}
       ${fieldRow({label:'שם פרטי', name:'firstName', placeholder:'לדוגמה: חן', required:true})}
       ${fieldRow({label:'שם משפחה', name:'lastName', placeholder:'לדוגמה: בראונשטיין', required:true})}
       ${fieldRow({label:'טלפון', name:'phone', type:'tel', placeholder:'05XXXXXXXX', required:true})}
@@ -103,84 +110,59 @@ window.BillingWizard = (() => {
       const firstName = $('f_firstName').value.trim();
       const lastName  = $('f_lastName').value.trim();
       const phone     = $('f_phone').value.replace(/[^\d]/g,'');
-      if(!Val.nonEmpty(role))     return setStatus('נא לבחור: תלמיד/הורה');
-      if(!Val.nonEmpty(firstName))return setStatus('נא למלא שם פרטי');
-      if(!Val.nonEmpty(lastName)) return setStatus('נא למלא שם משפחה');
-      if(!Val.phoneIL(phone))     return setStatus('טלפון לא תקין');
+      if(!Val.nonEmpty(role))     return setStatus('👨‍🚀 נא לבחור: תלמיד/הורה');
+      if(!Val.nonEmpty(firstName))return setStatus('👨‍🚀 נא למלא שם פרטי');
+      if(!Val.nonEmpty(lastName)) return setStatus('👨‍🚀 נא למלא שם משפחה');
+      if(!Val.phoneIL(phone))     return setStatus('👨‍🚀 טלפון לא תקין');
       setStatus('');
       Object.assign(State.data, { role, firstName, lastName, phone });
-      step2_topic();
+      step2_subjectTeacher();
     };
   }
 
-  // מסך 2 — נושא הפנייה (חיוב/חשבוניות)
-  function step2_topic(){
-    const topics = [
-      'עדכון אמצעי תשלום (כרטיס אשראי)',
-      'חיוב כפול / זיכוי חסר',
-      'העברת חיוב להורה אחר',
-      'קבלת חשבונית/קבלה',
-      'שינוי פרטי חשבונית',
-      'בירור חיוב',
-      'אחר'
-    ];
+  // 2 — מקצוע ומורה
+  function step2_subjectTeacher(){
+    const subjects = ['מתמטיקה','אנגלית','פיזיקה','שפה','הוראה מתקנת','אנגלית מדוברת לקטנטנים'];
     stepEl.innerHTML = `
       <div class="title-row">
-        <h3>על מה תרצו לדבר? 👨‍🚀</h3>
+        <h3>פרטי השירות 👨‍🚀</h3>
         <div class="muted">שלב 2/3</div>
       </div>
-      ${selectRow({label:'נושא הפנייה', name:'topic', options:topics, required:true})}
-      <div class="field" id="otherWrap" style="display:none">
-        <label for="f_other">פרטו (רשות)</label>
-        <textarea id="f_other" rows="3" placeholder="כתבו כאן כל פרט שיעזור לנו לטפל בבקשה"></textarea>
-      </div>
+      ${selectRow({label:'מקצוע', name:'subject', options:subjects, required:true})}
+      ${fieldRow({label:'שם המורה במרכז בראונשטיין (רשות)', name:'teacher', placeholder:'לדוגמה: לירז', required:false})}
       <div class="wizard-actions">
         <button class="btn" id="prev">חזרה</button>
         <button class="btn primary" id="next">המשך</button>
       </div>`;
-    push(step2_topic);
-
-    const topicSel  = $('f_topic');
-    const otherWrap = $('otherWrap');
-    topicSel.addEventListener('change', ()=> {
-      otherWrap.style.display = (topicSel.value === 'אחר') ? '' : 'none';
-    });
+    push(step2_subjectTeacher);
 
     $('prev').onclick = goBack;
     $('next').onclick = ()=>{
-      const topic = topicSel.value;
-      const notes = (topic === 'אחר') ? ($('f_other').value || '').trim() : '';
-      if(!Val.nonEmpty(topic)) return setStatus('נא לבחור נושא');
+      const subject = $('f_subject').value;
+      const teacher = $('f_teacher').value.trim();
+      if(!Val.nonEmpty(subject)) return setStatus('👨‍🚀 נא לבחור מקצוע');
       setStatus('');
-      Object.assign(State.data, { topic, notes });
-      step3_summary();
+      Object.assign(State.data, { subject, teacher });
+      step3_message();
     };
   }
 
-  // מסך 3 — סיכום ושליחה
-  function step3_summary(){
-    const d = State.data;
-    const rows = [
-      ['סוג פונה', d.role],
-      ['שם פרטי', d.firstName],
-      ['שם משפחה', d.lastName],
-      ['טלפון', d.phone],
-      ['נושא הפנייה', d.topic],
-      ...(d.notes ? [['פרטים נוספים', d.notes]] : []),
-    ];
+  // 3 — תיאור חופשי (במקום רשימת נושאים)
+  function step3_message(){
     stepEl.innerHTML = `
       <div class="title-row">
-        <h3>סיכום ושליחה 👨‍🚀</h3>
-        <div class="muted">סיום</div>
+        <h3>איך נוכל לעזור? 👨‍🚀</h3>
+        <div class="muted">שלב 3/3</div>
       </div>
-      <div class="summary">
-        ${rows.map(([k,v])=>`<div><strong>${k}:</strong> ${v||'-'}</div>`).join('')}
+      <div class="field">
+        <label for="f_msg">כתבו לנו בקצרה (חיוב/חשבוניות/עדכון אמצעי תשלום וכו׳)</label>
+        <textarea id="f_msg" rows="4" placeholder="כל מה שיעזור לנו לטפל בפנייה במהירות"></textarea>
       </div>
       <div class="wizard-actions">
         <button class="btn" id="prev">חזרה</button>
         <button class="btn primary" id="send">אישור ושליחה למזכירות 📤</button>
       </div>`;
-    push(step3_summary);
+    push(step3_message);
 
     $('prev').onclick = goBack;
     $('send').onclick = submit;
@@ -192,8 +174,8 @@ window.BillingWizard = (() => {
     if(!Val.nonEmpty(d.firstName)) errs.push('firstName');
     if(!Val.nonEmpty(d.lastName))  errs.push('lastName');
     if(!Val.phoneIL(d.phone))      errs.push('phone');
-    if(!Val.nonEmpty(d.topic))     errs.push('topic');
-    if(errs.length) return setStatus('חסר/לא תקין: '+errs.join(', '));
+    if(!Val.nonEmpty(d.subject))   errs.push('subject');
+    if(errs.length) return setStatus('👨‍🚀 חסר/לא תקין: '+errs.join(', '));
 
     const payload = {
       flow: 'billing',
@@ -201,35 +183,22 @@ window.BillingWizard = (() => {
       project: (window.APP_CONFIG||{}).PROJECT || 'Houston',
       status: 'לטיפול',
       source: 'יוסטון – אתר',
-
-      // מזדהה
-      role: d.role,
-      firstName: d.firstName,
-      lastName: d.lastName,
-      phone: d.phone,
-
-      // שדות שהוסרו בזרימה – נשמרים ריקים לתאימות לגיליון אם קיים
-      studentName: '',
-      studentLastName: '',
-      subject: '',
-      teacher: '',
-
-      // תוכן בילינג
-      topic: d.topic,
-      notes: d.notes || ''
+      role: d.role, firstName: d.firstName, lastName: d.lastName, phone: d.phone,
+      subject: d.subject, teacher: d.teacher || '',
+      topic: 'טקסט חופשי', notes: ($('f_msg').value||'').trim()
     };
 
     try{
-      setStatus('שולח ל־Google Sheets…');
+      setStatus('👨‍🚀 שולח…');
       const res = await send(payload);
       if(res && res.ok){
         setStatus('נשלח בהצלחה');
         stepEl.innerHTML = `
-          <div class="bubble ok">הבקשה נקלטה ✅ ניצור קשר בהקדם 👨‍🚀</div>
+          <div class="bubble ok">הבקשה נקלטה ✅ נחזור אליכם בהקדם 👨‍🚀</div>
           <div class="wizard-actions">
-            <button class="btn" onclick="location.href='index.html'">חזרה לתפריט מנוי/ה</button>
+            <button class="btn primary" onclick="location.href='index.html'">לתפריט מנויים</button>
           </div>`;
-        backBtn && (backBtn.disabled = true);
+        backBtn.disabled = true;
         State.stack = [stepEl.innerHTML];
       }else{
         throw new Error((res && res.error) || 'server_error');
@@ -242,7 +211,7 @@ window.BillingWizard = (() => {
   function start(){
     State.data = {};
     State.stack = [];
-    backBtn && (backBtn.disabled = true);
+    backBtn.disabled = true;
     setStatus('');
     step1_contact();
   }
