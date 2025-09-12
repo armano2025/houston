@@ -1,9 +1,3 @@
-<!-- /public/index.html – Rev 2025.02
-     • כפתורים לחיצים עם פידבק (press + ripple)
-     • CTA מודגש "ללא מנוי"
-     • תיאור מנויים כולל שיעור תגבור
-     • מניעת זום באייפון (maximum-scale=1). אם תרצה להחזיר זום – מחק maximum-scale.
--->
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -16,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./styles.light.css?v=5" />
+  <link rel="stylesheet" href="./styles.light.css?v=2025.03" />
 </head>
 <body>
   <main class="wrap">
@@ -24,7 +18,7 @@
       <header class="head">
         <div class="brand" aria-label="יוסטון – מרכז הלמידה בראונשטיין">
           <div class="title">יוסטון <span aria-hidden="true">👨‍🚀</span></div>
-          <div class="logo" aria-hidden="true">B</div>
+          <div class="logo" aria-hidden="true"><span>B</span></div>
         </div>
         <p class="subtitle">בוט השירות של מרכז הלמידה בראונשטיין</p>
       </header>
@@ -34,27 +28,23 @@
           היי, איך אפשר לעזור היום? 👨‍🚀
         </div>
 
-        <!-- תפריט ראשי -->
         <nav class="grid" aria-label="תפריט ראשי">
-          <!-- CTA: ללא מנוי -->
-          <a class="tile cta pressable" href="./branches/branch1/boost-onetime.html" data-cta="onetime">
+          <!-- חד פעמי – למי שאינו מנוי -->
+          <a class="tile cta" href="./branches/branch1/boost-onetime.html">
             <div class="kicker">ללא מנוי</div>
             <h3>שיעור חד־פעמי</h3>
             <p>על בסיס מקום פנוי • הרשמה מהירה</p>
           </a>
 
-          <!-- מנויים -->
-          <a class="tile pressable" href="./branches/branch3/index.html" data-cta="members">
+          <!-- מנויים – כולל שיעור תגבור -->
+          <a class="tile" href="./branches/branch3/index.html">
             <div class="kicker">למנויים</div>
             <h3>מנויים</h3>
-            <p>
-              השלמת שיעור, שינוי קבוע, עדכון תשלום/חשבוניות,
-              הודעה למזכירות, ביטול מנוי, וגם שיעור תגבור
-            </p>
+            <p>השלמת שיעור, שינוי קבוע, עדכון תשלום/חשבוניות, הודעה למזכירות, ביטול מנוי, וגם שיעור תגבור</p>
           </a>
 
-          <!-- פרטי מנוי חודשי -->
-          <a class="tile pressable" href="./branches/info/index.html" data-cta="info">
+          <!-- מידע והרשמה -->
+          <a class="tile" href="./branches/info/index.html">
             <div class="kicker">למתעניינים</div>
             <h3>פרטי מנוי חודשי</h3>
             <p>מידע והרשמה למסלול קבוע</p>
@@ -64,36 +54,7 @@
     </section>
   </main>
 
-  <!-- אינטראקציה: pressed + ripple אמיתי, קליל וללא ספריות -->
-  <script>
-    (() => {
-      function addRipple(e, el){
-        const r = document.createElement('span');
-        r.className = 'ripple';
-        const rect = el.getBoundingClientRect();
-        r.style.left = (e.clientX - rect.left) + 'px';
-        r.style.top  = (e.clientY - rect.top)  + 'px';
-        el.appendChild(r);
-        setTimeout(() => r.remove(), 600);
-      }
-      function onDown(e){
-        const t = e.target.closest('.pressable'); if(!t) return;
-        t.classList.add('pressed');
-        addRipple(e, t);
-      }
-      function onUp(){
-        document.querySelectorAll('.pressable.pressed').forEach(el => el.classList.remove('pressed'));
-      }
-      document.addEventListener('pointerdown', onDown, {passive:true});
-      document.addEventListener('pointerup', onUp, {passive:true});
-      document.addEventListener('pointercancel', onUp, {passive:true});
-      document.addEventListener('keydown', (e)=>{
-        if((e.key==='Enter' || e.key===' ') && document.activeElement?.classList.contains('pressable')){
-          document.activeElement.classList.add('pressed');
-          setTimeout(onUp, 150);
-        }
-      });
-    })();
-  </script>
+  <!-- חשוב: לטעון בכל דף כדי לאחד פידבק לחיצה + viewport -->
+  <script src="./js/ui-core.js?v=2025.03"></script>
 </body>
 </html>
