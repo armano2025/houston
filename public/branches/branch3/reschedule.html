@@ -1,31 +1,30 @@
 <!-- /public/branches/branch3/reschedule.html
-     דף "שינוי מועד קבוע (Reschedule)" כוויזארד רב-שלבי (ללא צ'אט).
-     משתמש ב-styles.light.css לעיצוב, וב-chat-core.js רק לולידציה ושליחה אל Google Sheets. -->
+     "שינוי מועד קבוע" – ויזארד רב־שלבי בעיצוב אחיד -->
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>יוסטון 👨‍🚀 – שינוי מועד קבוע (Reschedule)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>יוסטון 👨‍🚀 – שינוי מועד קבוע</title>
   <meta name="theme-color" content="#5b7cfa" />
-  <link rel="stylesheet" href="../../styles.light.css?v=2" />
-  <style>
-    /* מיקרו-עיצוב למסכי הוויזארד */
-    .wizard-wrap{ max-width:720px; margin:0 auto }
-    .wizard-step{ padding:18px 22px 24px }
-    .wizard-actions{ display:flex; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap }
-    .title-row{ display:flex; align-items:center; justify-content:space-between; gap:10px }
-    .slot-list{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px }
-    .chip.del{ cursor:pointer }
-    .muted{ color:var(--muted) }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <section class="card wizard-wrap">
 
-      <!-- טופ־בר -->
-      <div class="topbar" style="padding:12px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(255,255,255,.45),rgba(255,255,255,.2));backdrop-filter: blur(6px);display:flex;gap:8px;justify-content:space-between;align-items:center">
+  <!-- פונט ועיצוב גלובלי -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap" rel="stylesheet" />
+  <!-- גרסת העיצוב המאוחדת שמסתירה לוגו ישן (.logo) -->
+  <link rel="stylesheet" href="../../styles.light.css?v=4.1" />
+</head>
+<body class="has-toplogo">
+  <!-- לוגו מותג קבוע (קובץ: /public/assets/IMG_9789.jpeg) -->
+  <a class="toplogo" href="../../index.html" aria-label="בראונשטיין – דף הבית">
+    <img src="../../assets/IMG_9789.jpeg" alt="לוגו בראונשטיין" loading="eager" fetchpriority="high">
+  </a>
+
+  <main class="wrap">
+    <section class="card wizard-wrap">
+      <!-- טופ־בר (אחיד מול שאר הזרימות) -->
+      <div class="topbar">
         <div class="right" style="display:flex;gap:8px;align-items:center">
           <button class="btn" id="backBtn" disabled>חזרה</button>
         </div>
@@ -36,26 +35,22 @@
       </div>
 
       <!-- כותרת -->
-      <div class="head">
-        <div class="brand">
-          <div class="logo" aria-hidden="true">HB</div>
-          <div>
-            <div class="title">שינוי מועד קבוע 👨‍🚀</div>
-            <p class="subtitle">נזין כמה פרטים קצרים ונשלח למזכירות</p>
-          </div>
+      <header class="head">
+        <div class="brand" aria-label="שינוי מועד קבוע">
+          <h1 class="title">שינוי מועד קבוע</h1>
+          <p class="subtitle">נזין כמה פרטים קצרים ונשלח למזכירות</p>
         </div>
-      </div>
+      </header>
 
-      <!-- תוכן הוויזארד -->
+      <!-- תוכן הוויזארד (נטען דינמית) -->
       <div class="wizard-step body" id="step"></div>
 
       <!-- פוטר סטטוס -->
       <div class="footerbar">
-        <span id="statusBox" class="muted" aria-live="polite"></span>
+        <span id="statusBox" class="status" aria-live="polite"></span>
       </div>
-
     </section>
-  </div>
+  </main>
 
   <!-- קונפיג (Webhook + Project) -->
   <script>
@@ -65,13 +60,12 @@
     };
   </script>
 
-  <!-- נטען את chat-core בשביל ולידציה ושליחה בלבד -->
+  <!-- ליבה (ולידציה + שליחה) -->
   <script src="../js/chat-core.js?v=3"></script>
 
-  <!-- הזרימה עצמה (וויזארד, לא צ'אט) -->
+  <!-- זרימת שינוי מועד קבוע -->
   <script src="../js/flows/reschedule.js?v=1"></script>
   <script>
-    // הפעלה
     window.addEventListener('DOMContentLoaded', () => window.RescheduleWizard?.start?.());
   </script>
 </body>
