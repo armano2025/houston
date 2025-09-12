@@ -1,30 +1,29 @@
 <!-- /public/branches/branch3/message.html
-     דף "Message – הודעה למזכירות" כוויזארד: לכל שלב מסך משלו + כפתור חזרה.
-     משתמש ב-styles.light.css לעיצוב, ו-chat-core.js לולידציה ושליחה ל-Google Sheets. -->
+     "הודעה למזכירות" – ויזארד רב־שלבי בעיצוב אחיד -->
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>יוסטון 👨‍🚀 – הודעה למזכירות (Message)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>יוסטון 👨‍🚀 – הודעה למזכירות</title>
   <meta name="theme-color" content="#5b7cfa" />
-  <!-- ודא שגרסת ה-CSS המעודכנת מוטענת (עם שיפורי נגישות/טיפוגרפיה) -->
-  <link rel="stylesheet" href="../../styles.light.css?v=3" />
-  <style>
-    .wizard-wrap{ max-width:720px; margin:0 auto }
-    .wizard-step{ padding:18px 22px 24px }
-    .wizard-actions{ display:flex; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap }
-    .title-row{ display:flex; align-items:center; justify-content:space-between; gap:10px }
-    .muted{ color:var(--muted) }
-    .chips{ margin-top:8px }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <section class="card wizard-wrap">
 
-      <!-- טופ־בר -->
-      <div class="topbar" style="padding:12px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(255,255,255,.45),rgba(255,255,255,.2));backdrop-filter: blur(6px);display:flex;gap:8px;justify-content:space-between;align-items:center">
+  <!-- פונט ועיצוב גלובלי -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../styles.light.css?v=4" />
+</head>
+<body class="has-toplogo">
+  <!-- לוגו מותג קבוע (קובץ: /public/assets/IMG_9789.jpeg) -->
+  <a class="toplogo" href="../../index.html" aria-label="בראונשטיין – דף הבית">
+    <img src="../../assets/IMG_9789.jpeg" alt="לוגו בראונשטיין" loading="eager" fetchpriority="high">
+  </a>
+
+  <main class="wrap">
+    <section class="card wizard-wrap">
+      <!-- טופ־בר (אחיד מול יתר המסכים) -->
+      <div class="topbar">
         <div class="right" style="display:flex;gap:8px;align-items:center">
           <button class="btn" id="backBtn" disabled>חזרה</button>
         </div>
@@ -34,27 +33,23 @@
         </div>
       </div>
 
-      <!-- כותרת דף -->
-      <div class="head">
-        <div class="brand">
-          <div class="logo" aria-hidden="true">HB</div>
-          <div>
-            <div class="title">הודעה למזכירות (Message)</div>
-            <p class="subtitle">נזין כמה פרטים קצרים ונשלח למזכירות</p>
-          </div>
+      <!-- כותרת -->
+      <header class="head">
+        <div class="brand" aria-label="הודעה למזכירות">
+          <h1 class="title">הודעה למזכירות</h1>
+          <p class="subtitle">נזין כמה פרטים קצרים ונשלח למזכירות</p>
         </div>
-      </div>
+      </header>
 
-      <!-- תוכן הוויזארד -->
+      <!-- תוכן הוויזארד (נטען דינמית) -->
       <div class="wizard-step body" id="step"></div>
 
       <!-- פוטר סטטוס -->
       <div class="footerbar">
         <span id="statusBox" class="status" aria-live="polite"></span>
       </div>
-
     </section>
-  </div>
+  </main>
 
   <!-- קונפיג (Webhook + Project) -->
   <script>
@@ -64,10 +59,10 @@
     };
   </script>
 
-  <!-- ליבת עזר (ולידציה + שליחה) -->
+  <!-- ליבה (ולידציה + שליחה) -->
   <script src="../js/chat-core.js?v=3"></script>
 
-  <!-- הזרימה עצמה -->
+  <!-- זרימת "הודעה למזכירות" -->
   <script src="../js/flows/message.js?v=1"></script>
   <script>
     window.addEventListener('DOMContentLoaded', () => window.MessageWizard?.start?.());
