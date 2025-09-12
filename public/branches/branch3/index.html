@@ -1,5 +1,5 @@
 <!-- /public/branches/branch3/index.html
-     תפריט מנוי קיים – עיצוב אחיד + לוגו אמיתי -->
+     תפריט מנוי קיים – עיצוב אחיד + Quick Actions + Recent + Prefetch -->
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -12,7 +12,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="../../styles.light.css?v=4" />
+  <link rel="stylesheet" href="../../styles.light.css?v=4.1" />
+
+  <!-- Prefetch למסכים הפנימיים לניעור מהיר -->
+  <link rel="prefetch" href="./makeup.html?v=page1" as="document" />
+  <link rel="prefetch" href="./reschedule.html" as="document" />
+  <link rel="prefetch" href="./billing.html" as="document" />
+  <link rel="prefetch" href="./message.html" as="document" />
+  <link rel="prefetch" href="./cancel.html" as="document" />
+  <link rel="prefetch" href="../branch1/boost.html" as="document" />
 </head>
 <body class="has-toplogo">
   <!-- לוגו מותג קבוע (קובץ: /public/assets/IMG_9789.jpeg) -->
@@ -36,55 +44,64 @@
         <!-- כותרת -->
         <div class="brand" aria-label="תפריט מנוי קיים">
           <h1 class="title">תפריט מנוי קיים</h1>
-          <p class="subtitle">בחרו פעולה שתרצו לבצע</p>
+          <p class="subtitle">מה תרצו לעשות עכשיו?</p>
         </div>
       </header>
 
       <div class="body" id="area">
-        <div class="bubble bot" role="status" aria-live="polite">
-          איך אפשר לעזור היום? בחרו אחת מהפעולות:
+        <!-- Quick Actions: הצעות מהירות לפעולה נפוצה -->
+        <div class="chips" aria-label="פעולות מהירות">
+          <a class="chip" href="./message.html" data-action="הודעה למזכירות">📝 הודעה קצרה</a>
+          <a class="chip" href="./makeup.html?v=page1" data-action="השלמת שיעור">📅 השלמת שיעור</a>
+          <a class="chip" href="./reschedule.html" data-action="שינוי קבוע">🔁 שינוי קבוע</a>
         </div>
 
-        <!-- רשת פעולות -->
-        <nav class="grid" aria-label="פעולות למנוי קיים">
-          <!-- השלמת שיעור (makeup.html) -->
-          <a class="tile" href="./makeup.html?v=page1" aria-label="השלמת שיעור">
-            <h3>השלמת שיעור</h3>
+        <!-- “המשכת לאחרונה” מופיע אם יש נתון בלוקאל־סטורג' -->
+        <p id="recentAction" class="meta muted" style="margin-top:10px; display:none;"></p>
+
+        <!-- קבוצה: ניהול שיעורים -->
+        <h2 class="subtitle" style="font-size:var(--fs-h2); font-weight:800; color:var(--text); margin:16px 0 6px;">
+          ניהול שיעורים
+        </h2>
+        <nav class="grid" aria-label="ניהול שיעורים">
+          <a class="tile" href="./makeup.html?v=page1" aria-label="השלמת שיעור" data-action="השלמת שיעור">
+            <h3>📅 השלמת שיעור</h3>
             <p>דיווח על החמצה ובחירת מועד השלמה</p>
           </a>
 
-          <!-- שינוי קבוע -->
-          <a class="tile" href="./reschedule.html" aria-label="שינוי קבוע">
-            <h3>שינוי קבוע</h3>
+          <a class="tile" href="./reschedule.html" aria-label="שינוי קבוע" data-action="שינוי קבוע">
+            <h3>🔁 שינוי קבוע</h3>
             <p>בקשה לשינוי יום/שעה קבועים</p>
           </a>
 
-          <!-- עדכון תשלום / חשבוניות -->
-          <a class="tile" href="./billing.html" aria-label="עדכון תשלום">
-            <h3>עדכון תשלום</h3>
-            <p>אמצעי תשלום וחשבוניות</p>
-          </a>
-
-          <!-- הודעה למזכירות -->
-          <a class="tile" href="./message.html" aria-label="הודעה">
-            <h3>הודעה</h3>
-            <p>שליחת הודעה למזכירות</p>
-          </a>
-
-          <!-- ביטול מנוי -->
-          <a class="tile" href="./cancel.html" aria-label="ביטול מנוי">
-            <h3>ביטול מנוי</h3>
-            <p>בקשת סיום מנוי</p>
-          </a>
-
-          <!-- שיעור תגבור (Boost) -->
-          <a class="tile" href="../branch1/boost.html" aria-label="שיעור תגבור">
-            <h3>שיעור תגבור</h3>
+          <a class="tile" href="../branch1/boost.html" aria-label="שיעור תגבור" data-action="שיעור תגבור">
+            <h3>💪 שיעור תגבור</h3>
             <p>בקשה חד־פעמית לתגבור</p>
           </a>
         </nav>
 
-        <p class="meta muted">
+        <!-- קבוצה: חיוב ותקשורת -->
+        <h2 class="subtitle" style="font-size:var(--fs-h2); font-weight:800; color:var(--text); margin:18px 0 6px;">
+          חיוב ותקשורת
+        </h2>
+        <nav class="grid" aria-label="חיוב ותקשורת">
+          <a class="tile" href="./billing.html" aria-label="עדכון תשלום" data-action="עדכון תשלום">
+            <h3>💳 עדכון תשלום</h3>
+            <p>אמצעי תשלום וחשבוניות</p>
+          </a>
+
+          <a class="tile" href="./message.html" aria-label="הודעה" data-action="הודעה למזכירות">
+            <h3>📝 הודעה</h3>
+            <p>שליחת הודעה למזכירות</p>
+          </a>
+
+          <a class="tile" href="./cancel.html" aria-label="ביטול מנוי" data-action="ביטול מנוי">
+            <h3>🙁 ביטול מנוי</h3>
+            <p>בקשת סיום מנוי</p>
+          </a>
+        </nav>
+
+        <p class="meta muted" style="margin-top:10px">
           טיפ: אפשר לחזור לכאן בכל שלב דרך כפתור <strong>חזרה</strong> במסכים הפנימיים.
         </p>
       </div>
@@ -94,5 +111,33 @@
       </div>
     </section>
   </main>
+
+  <script>
+    // Recent: שמירת פעולה אחרונה + הצגה עדינה בראש הדף
+    (function(){
+      const KEY = 'houston_last_action';
+      const container = document.getElementById('recentAction');
+
+      // שמירה על קליקים מכל לינק שיש לו data-action
+      const save = (label, href) => {
+        try{ localStorage.setItem(KEY, JSON.stringify({label, href, ts: Date.now()})); }catch(e){}
+      };
+      document.addEventListener('click', (ev) => {
+        const a = ev.target.closest('a[data-action]');
+        if (!a) return;
+        save(a.getAttribute('data-action') || a.textContent.trim(), a.getAttribute('href'));
+      }, {capture:true});
+
+      // הצגה אם יש ערך
+      try{
+        const raw = localStorage.getItem(KEY);
+        if (raw){
+          const {label, href} = JSON.parse(raw);
+          container.innerHTML = `המשכת לאחרונה: <a href="${href}" class="badge" aria-label="להמשיך אל ${label}">${label}</a>`;
+          container.style.display = '';
+        }
+      }catch(e){}
+    })();
+  </script>
 </body>
 </html>
