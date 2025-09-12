@@ -1,4 +1,4 @@
-/* /public/styles.light.css – יוסטון 2025 (v4) */
+/* /public/styles.light.css – יוסטון 2025 (v4.1) */
 /* =====================  TOKENS  ===================== */
 :root{
   --bg:#f6f8fb;
@@ -77,22 +77,8 @@ body{
 .toplogo img{ height:44px; width:auto; display:block; border-radius:8px }
 .has-toplogo .wrap{ padding-top:78px } /* שלא יכנס מתחת ללוגו */
 
-/* DEPRECATED: לוגו עגול ישן עם האות B – נשאר תאימות אחורה */
-.logo{
-  position:fixed; top:calc(8px + env(safe-area-inset-top)); right:8px; z-index:999;
-  width:46px; height:46px; border-radius:12px; display:grid; place-items:center;
-  font-weight:800; font-size:22px; color:#111;
-  background:
-    radial-gradient(circle at 50% 50%, #ffffff 0 62%, transparent 63%),
-    conic-gradient(from 0deg,
-      var(--accent-1) 0 25%,
-      var(--accent-2) 25% 50%,
-      var(--brand-2) 50% 75%,
-      var(--brand) 75% 100%);
-  box-shadow:0 6px 20px rgba(0,0,0,.12);
-  user-select:none; pointer-events:none;
-}
-.logo::before{ content:"B"; transform:translateY(-1px) }
+/* DEPRECATED: מחבֵּא כל לוגו ישן אם נשאר ב־HTML */
+.logo{ display:none !important }
 
 /* =====================  LAYOUT  ===================== */
 .wrap{ min-height:100dvh; display:grid; place-items:center; padding:24px }
@@ -189,7 +175,7 @@ body{
 label{ display:block; font-weight:800; margin-bottom:6px; font-size:var(--fs-base) }
 input,select,textarea{
   width:100%; padding:14px 16px; border-radius:14px;
-  border:1px solid var(--border); background:#fff; color:var(--text);
+  border:1px solid var(--border); background:#fff; color:#0f172a;
   font-size:16px; line-height:1.35;
 }
 @supports (-webkit-touch-callout:none){ input,select,textarea{ font-size:16px } }
