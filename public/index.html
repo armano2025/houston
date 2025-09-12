@@ -8,116 +8,15 @@
   <meta name="theme-color" content="#3b82f6" />
   <meta name="description" content="יוסטון – בוט שירות חכם למרכז הלמידה בראונשטיין." />
 
-  <!-- פונט ועיצוב גלובלי קיים -->
+  <!-- פונט ועיצוב גלובלי -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./styles.light.css?v=3" />
-
-  <!-- שדרוגי UI מקומיים (לא פוגעים בקובץ ה-CSS הראשי) -->
-  <style>
-    :root{
-      --glass-bg: rgba(255,255,255,0.82);
-      --glass-brd:#e8eef7;
-      --shadow: 0 16px 40px rgba(15,23,42,0.10);
-      --shadow-hover: 0 22px 50px rgba(15,23,42,0.14);
-      --radius: 20px;
-      --gap: 14px;
-    }
-
-    /* רקע רך ומודרני */
-    body{
-      min-height: 100dvh;
-      background:
-        radial-gradient(1200px 600px at 90% -10%, #c7d2fe 0%, rgba(199,210,254,0) 60%),
-        radial-gradient(900px 480px at -10% 110%, #a7f3d0 0%, rgba(167,243,208,0) 60%),
-        #f7f9fc;
-      color: #0f172a;
-    }
-
-    /* לוגו עליון קבוע – משתמש בתמונה: ./assets/IMG_9789.jpeg */
-    .toplogo{
-      position: fixed; top: 12px; right: 12px; z-index: 50;
-      display: inline-flex; align-items: center; justify-content: center;
-      padding: 8px; background: var(--glass-bg);
-      border: 1px solid var(--glass-brd); border-radius: 14px;
-      box-shadow: var(--shadow); backdrop-filter: blur(10px) saturate(1.15);
-      -webkit-backdrop-filter: blur(10px) saturate(1.15);
-    }
-    .toplogo img{
-      height: 44px; width: auto; display: block; border-radius: 8px;
-    }
-
-    /* כרטיס ראשי בסגנון "זכוכית" */
-    .card.home{
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-brd);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(12px) saturate(1.1);
-      -webkit-backdrop-filter: blur(12px) saturate(1.1);
-    }
-
-    .head .title{
-      margin: 0;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      font-size: clamp(1.6rem, 1.1rem + 2.2vw, 2.5rem);
-    }
-    .subtitle{
-      margin: 6px 0 0;
-      font-size: 1.05rem;
-      color: #475569;
-    }
-
-    /* בועה לפתיח */
-    .bubble.bot{
-      background: #ffffff;
-      border: 1px solid var(--glass-brd);
-      border-radius: 14px;
-      padding: 12px 14px;
-      box-shadow: 0 6px 20px rgba(15,23,42,0.06);
-      margin-bottom: 14px;
-    }
-
-    /* רשת הכפתורים */
-    .grid{
-      display: grid;
-      gap: var(--gap);
-      grid-template-columns: 1fr;
-    }
-    @media (min-width:560px){ .grid{ grid-template-columns: 1fr 1fr } }
-    @media (min-width:980px){ .grid{ grid-template-columns: 1fr 1fr 1fr } }
-
-    /* כפתור/קלף */
-    .tile{
-      display: block; text-decoration: none; color: inherit;
-      background: #fff;
-      padding: 16px 14px;
-      border: 1px solid var(--glass-brd);
-      border-radius: 16px;
-      box-shadow: var(--shadow);
-      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
-    }
-    .tile:hover, .tile:focus-visible{
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-hover);
-      border-color: #cbd5e1;
-      outline: none;
-    }
-    .tile h3{ margin: 0 0 6px; font-size: 1.12rem; font-weight: 700; }
-    .tile p{ margin: 0; color: #64748b; line-height: 1.45; }
-
-    /* נגישות למקלדת */
-    .tile:focus-visible{ box-shadow: 0 0 0 3px rgba(59,130,246,.35), var(--shadow-hover); }
-
-    /* ריווח גלובלי של ה-wrap */
-    .wrap{ padding-top: 70px; padding-bottom: 26px; }
-  </style>
+  <link rel="stylesheet" href="./styles.light.css?v=4" />
 </head>
 
 <body class="has-toplogo">
-  <!-- לוגו מותג קבוע (נתיב הקובץ: /public/assets/IMG_9789.jpeg) -->
+  <!-- לוגו מותג קבוע (הקובץ נמצא ב-/public/assets/IMG_9789.jpeg) -->
   <a class="toplogo" href="./index.html" aria-label="בראונשטיין – דף הבית">
     <img src="./assets/IMG_9789.jpeg" alt="לוגו בראונשטיין" loading="eager" fetchpriority="high">
   </a>
@@ -135,21 +34,18 @@
         <!-- פתיח דינמי נעים לעיניים -->
         <div class="bubble bot" id="welcome" role="status" aria-live="polite">טוען…</div>
 
-        <!-- תפריט ראשי: קישורים אמיתיים (נתיבים קיימים אצלך בפרויקט) -->
+        <!-- תפריט ראשי -->
         <nav class="grid" aria-label="תפריט ראשי">
-          <!-- לא מנויים – שיעור חד־פעמי -->
           <a class="tile" href="./branches/branch1/boost-onetime.html" aria-label="שיעור חד־פעמי על בסיס מקום פנוי">
             <h3>שיעור חד־פעמי</h3>
             <p>למי שאינו/אינה מנוי/ה – על בסיס מקום פנוי</p>
           </a>
 
-          <!-- מנויים -->
           <a class="tile" href="./branches/branch3/index.html" aria-label="מנויים – תפריט פעולות למנוי קיים">
             <h3>מנויים</h3>
             <p>השלמת שיעור, שינוי קבוע/חד־פעמי, שיעור תגבור, תשלומים והודעות</p>
           </a>
 
-          <!-- פרטי מנוי חודשי (מידע/הרשמה) -->
           <a class="tile" href="./branches/info/index.html" aria-label="פרטי מנוי חודשי – מידע והרשמה">
             <h3>פרטי מנוי חודשי</h3>
             <p>כל המידע על המסלולים והרשמה</p>
@@ -160,14 +56,13 @@
   </main>
 
   <script>
-    /* פתיח ידידותי: מציג יום בשבוע + שעה מקומית בפורמט קריא */
+    /* פתיח ידידותי: יום בשבוע + שעה מקומית */
     (function(){
       const el = document.getElementById('welcome');
       const days = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
       const pad  = n => String(n).padStart(2,'0');
       try{
         const d = new Date();
-        // getDay: 0=Sunday… נתאים לשמות העבריים
         const dayName = days[d.getDay()];
         const dateStr = `${pad(d.getDate())}/${pad(d.getMonth()+1)}`;
         const timeStr = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
