@@ -22,17 +22,13 @@
   <link rel="prefetch" href="./cancel.html" as="document" />
   <link rel="prefetch" href="../branch1/boost.html" as="document" />
 
-  <!-- מיקרו-סגנון להפרדה בין המחלקות -->
+  <!-- מיקרו-סגנון -->
   <style>
-    .section-head{
-      display:flex; align-items:center; gap:10px;
-      margin:18px 0 8px;
-    }
+    /* הפרדה בין המחלקות */
+    .section-head{ display:flex; align-items:center; gap:10px; margin:18px 0 8px }
     .section-head .label{
-      font-size:var(--fs-h2); font-weight:800; letter-spacing:-.01em;
-      color:var(--text);
-      display:inline-flex; align-items:center; gap:.5ch;
-      padding:6px 10px; border-radius:999px;
+      font-size:var(--fs-h2); font-weight:800; letter-spacing:-.01em; color:var(--text);
+      display:inline-flex; align-items:center; gap:.5ch; padding:6px 10px; border-radius:999px;
       background:var(--chip); border:1px solid var(--chip-brd);
     }
     .section-head .rule{
@@ -41,16 +37,17 @@
       opacity:.7;
     }
     .group-card{
-      background:var(--glass-bg);
-      border:1px solid var(--glass-brd);
-      border-radius:16px;
-      padding:12px;
-      box-shadow:0 12px 30px rgba(15,23,42,.06);
+      background:var(--glass-bg); border:1px solid var(--glass-brd); border-radius:16px;
+      padding:12px; box-shadow:0 12px 30px rgba(15,23,42,.06);
     }
-    /* ריווח נוח בין הקבוצות */
     .block{ margin-bottom:18px }
-    /* התאמה קטנה לטקסט האריחים: שורה אחת ונקייה */
     .tile p{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+
+    /* 1) יישור גובה הכפתורים בטופ־בר (אחיד ל-<button> ו-<a>) */
+    .topbar .btn{ display:inline-flex; align-items:center; justify-content:center; height:52px; line-height:1; padding:14px 18px }
+
+    /* 2) אימוג׳י מוגדל לצד הכותרת */
+    .title-emoji{ font-size:1.35em; line-height:1; margin-inline-start:.25ch; vertical-align:-6% }
   </style>
 </head>
 <body class="has-toplogo">
@@ -74,7 +71,7 @@
 
         <!-- כותרת -->
         <div class="brand" aria-label="תפריט מנוי קיים">
-          <h1 class="title">תפריט מנוי קיים</h1>
+          <h1 class="title"><span class="title-emoji" aria-hidden="true">👨‍🚀</span> תפריט מנוי קיים</h1>
           <p class="subtitle">מה תרצו לעשות עכשיו?</p>
         </div>
       </header>
@@ -137,8 +134,9 @@
           </div>
         </div>
 
+        <!-- טיפ חדש -->
         <p class="meta muted" style="margin-top:10px">
-          טיפ: אפשר לחזור לכאן בכל שלב דרך כפתור <strong>חזרה</strong> במסכים הפנימיים.
+          טיפ: התחלתם פעולה ולא סיימתם? יוסטון שומר טפסים מקומית — חזרו בכל רגע ותמשיכו מאותה נקודה.
         </p>
       </div>
 
