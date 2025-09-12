@@ -1,5 +1,5 @@
 <!-- /public/branches/branch3/cancel.html
-     דף "ביטול מנוי (Cancel)" – ויזארד רב־שלבי בעיצוב אחיד (v4) -->
+     "ביטול מנוי (Cancel)" – ויזארד רב־שלבי בעיצוב אחיד -->
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -8,13 +8,12 @@
   <title>יוסטון 👨‍🚀 – ביטול מנוי (Cancel)</title>
   <meta name="theme-color" content="#5b7cfa" />
 
-  <!-- פונט + עיצוב גלובלי -->
+  <!-- פונט ועיצוב גלובלי -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../../styles.light.css?v=4" />
 </head>
-
 <body class="has-toplogo">
   <!-- לוגו מותג קבוע (קובץ: /public/assets/IMG_9789.jpeg) -->
   <a class="toplogo" href="../../index.html" aria-label="בראונשטיין – דף הבית">
@@ -23,12 +22,12 @@
 
   <main class="wrap">
     <section class="card wizard-wrap">
-      <!-- טופ־בר נקי, תואם לשפה האחידה -->
-      <div class="topbar" role="navigation" aria-label="ניווט זרימה">
-        <div class="row">
+      <!-- טופ־בר (אחיד מול billing) -->
+      <div class="topbar">
+        <div class="right" style="display:flex;gap:8px;align-items:center">
           <button class="btn" id="backBtn" disabled>חזרה</button>
         </div>
-        <div class="row">
+        <div class="left" style="display:flex;gap:8px;align-items:center">
           <button class="btn ghost" onclick="location.href='index.html'">תפריט מנוי/ה</button>
           <button class="btn ghost" onclick="location.href='../../index.html'">לתפריט ראשי</button>
         </div>
@@ -42,8 +41,8 @@
         </div>
       </header>
 
-      <!-- גוף הוויזארד (מוזן דינמית ע"י cancel.js) -->
-      <div class="body wizard-step" id="step"></div>
+      <!-- תוכן הוויזארד (נטען דינמית) -->
+      <div class="wizard-step body" id="step"></div>
 
       <!-- פוטר סטטוס -->
       <div class="footerbar">
