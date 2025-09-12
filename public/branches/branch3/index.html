@@ -1,74 +1,96 @@
 <!-- /public/branches/branch3/index.html
-     דף ניווט למנוי קיים. הכפתור של Makeup מפנה ל־makeup.html. -->
+     תפריט מנוי קיים – עיצוב אחיד + לוגו אמיתי -->
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>יוסטון 👨‍🚀 – תפריט מנוי קיים</title>
   <meta name="theme-color" content="#5b7cfa" />
-  <link rel="stylesheet" href="../../styles.light.css?v=2" />
-  <style>
-    .brand-actions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap }
-    .grid .tile h3{ margin-top:0; margin-bottom:6px }
-    .grid .tile p{ margin:0; color:var(--muted) }
-    .tile:focus-visible{ outline:2px solid var(--brand); outline-offset:2px }
-    .top-actions{ display:flex; gap:8px; align-items:center; justify-content:space-between; margin-bottom:8px }
-    .left-actions, .right-actions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap }
-    .muted{ color:var(--muted) }
-  </style>
+
+  <!-- פונט ועיצוב גלובלי -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../styles.light.css?v=4" />
 </head>
-<body>
+<body class="has-toplogo">
+  <!-- לוגו מותג קבוע (קובץ: /public/assets/IMG_9789.jpeg) -->
+  <a class="toplogo" href="../../index.html" aria-label="בראונשטיין – דף הבית">
+    <img src="../../assets/IMG_9789.jpeg" alt="לוגו בראונשטיין" loading="eager" fetchpriority="high">
+  </a>
+
   <main class="wrap">
     <section class="card">
-      <div class="head">
-        <div class="top-actions">
-          <div class="right-actions">
+      <header class="head">
+        <!-- פס כפתורים עליון -->
+        <div class="topbar">
+          <div class="right">
             <button class="btn ghost" onclick="location.href='../../index.html'">לתפריט ראשי</button>
           </div>
-          <div class="left-actions">
+          <div class="left">
             <a class="btn ghost" href="../../faq.html" target="_blank" rel="noopener">יש לי שאלות</a>
           </div>
         </div>
 
-        <div class="brand">
-          <div class="logo" aria-hidden="true">HB</div>
-          <div>
-            <div class="title">תפריט מנוי קיים</div>
-            <p class="subtitle">בחרו פעולה שתרצו לבצע</p>
-          </div>
+        <!-- כותרת -->
+        <div class="brand" aria-label="תפריט מנוי קיים">
+          <h1 class="title">תפריט מנוי קיים</h1>
+          <p class="subtitle">בחרו פעולה שתרצו לבצע</p>
         </div>
-      </div>
+      </header>
 
       <div class="body" id="area">
         <div class="bubble bot" role="status" aria-live="polite">
           איך אפשר לעזור היום? בחרו אחת מהפעולות:
         </div>
 
+        <!-- רשת פעולות -->
         <nav class="grid" aria-label="פעולות למנוי קיים">
-          <!-- Makeup – השלמת שיעור -->
-          <a class="tile" href="./makeup.html?v=page1" aria-label="Makeup – השלמת שיעור">
-            <h3>Makeup – השלמת שיעור</h3>
-            <p>לדווח על החמצה ולקבוע מועד השלמה</p>
+          <!-- השלמת שיעור (makeup.html) -->
+          <a class="tile" href="./makeup.html?v=page1" aria-label="השלמת שיעור">
+            <h3>השלמת שיעור</h3>
+            <p>דיווח על החמצה ובחירת מועד השלמה</p>
           </a>
 
-          <!-- שאר הזרימות (קישורים מוכנים לעתיד) -->
-          <a class="tile" href="./reschedule.html"><h3>Reschedule – שינוי קבוע</h3><p>בקשה לשינוי יום/שעה קבועים</p></a>
-          <a class="tile" href="./billing.html"><h3>Billing – עדכון תשלום</h3><p>אמצעי תשלום/חשבוניות</p></a>
-          <a class="tile" href="./message.html"><h3>Message – הודעה</h3><p>הודעה למזכירות</p></a>
-          <a class="tile" href="./cancel.html"><h3>Cancel – ביטול מנוי</h3><p>בקשת סיום מנוי</p></a>
+          <!-- שינוי קבוע -->
+          <a class="tile" href="./reschedule.html" aria-label="שינוי קבוע">
+            <h3>שינוי קבוע</h3>
+            <p>בקשה לשינוי יום/שעה קבועים</p>
+          </a>
 
-          <!-- Boost לנוחות -->
-          <a class="tile" href="../branch1/boost.html"><h3>Boost – שיעור תגבור</h3><p>בקשה לשיעור תגבור חד־פעמי</p></a>
+          <!-- עדכון תשלום / חשבוניות -->
+          <a class="tile" href="./billing.html" aria-label="עדכון תשלום">
+            <h3>עדכון תשלום</h3>
+            <p>אמצעי תשלום וחשבוניות</p>
+          </a>
+
+          <!-- הודעה למזכירות -->
+          <a class="tile" href="./message.html" aria-label="הודעה">
+            <h3>הודעה</h3>
+            <p>שליחת הודעה למזכירות</p>
+          </a>
+
+          <!-- ביטול מנוי -->
+          <a class="tile" href="./cancel.html" aria-label="ביטול מנוי">
+            <h3>ביטול מנוי</h3>
+            <p>בקשת סיום מנוי</p>
+          </a>
+
+          <!-- שיעור תגבור (Boost) -->
+          <a class="tile" href="../branch1/boost.html" aria-label="שיעור תגבור">
+            <h3>שיעור תגבור</h3>
+            <p>בקשה חד־פעמית לתגבור</p>
+          </a>
         </nav>
 
-        <p class="meta muted" style="margin-top:10px">
-          טיפ: אפשר לחזור לכאן בכל שלב דרך כפתור <strong>חזרה</strong> בתחתית.
+        <p class="meta muted">
+          טיפ: אפשר לחזור לכאן בכל שלב דרך כפתור <strong>חזרה</strong> במסכים הפנימיים.
         </p>
       </div>
 
       <div class="footerbar" aria-hidden="true">
-        <span class="muted">יוסטון 👨‍🚀</span>
+        <span class="meta muted">יוסטון 👨‍🚀</span>
       </div>
     </section>
   </main>
