@@ -25,7 +25,7 @@
   function updateBack(){ if (backBtn) backBtn.disabled = State.history.length <= 1; }
   if (backBtn) backBtn.onclick = goBack;
 
-  // ===== Utilities מינימליים (לנוחות; לא חובה לכל הדפים) =====
+  // ===== Utilities =====
   function clear(){ State.token++; if (area) area.innerHTML=''; }
   function autoscroll(){ if (area) area.scrollTo?.({ top: area.scrollHeight, behavior: 'smooth' }); }
   function setStatus(msg){ if (status) status.textContent = msg; }
@@ -54,7 +54,7 @@
     return fromCfg || fromLS || '';
   }
 
-  // *** שדרוג קריטי: החזרת שגיאה מפורטת, וגם תמיכה בתשובות שאינן JSON ***
+  // תמיכה בתשובות שאינן JSON + שגיאות קריאות
   async function sendLeadToSheet(payload){
     const base = getApi();
     if (!base) throw new Error('SHEET_API_URL חסר (Webhook לא מוגדר).');
@@ -73,7 +73,6 @@
     let rawText = '';
     try { rawText = await res.text(); } catch(_) {}
 
-    // ננסה לפענח JSON; אם לא – נשמור את הטקסט הגולמי לשגיאה קריאה
     let data = {};
     try { data = rawText ? JSON.parse(rawText) : {}; } catch(e){ /* ignore */ }
 
@@ -87,13 +86,9 @@
 
   // ===== Public API =====
   const Chat = {
-    // state
     State,
-    // helpers
     clear, autoscroll, setStatus, bubble, push, goBack, last,
-    // validators
     Val,
-    // network
     sendLeadToSheet,
   };
 
