@@ -1,14 +1,7 @@
 /* /public/branches/js/flows/boost-onetime.js
    ויזארד "שיעור חד־פעמי על בסיס מקום פנוי" – ללא צ'אט.
-   עכשיו עם זמינות רב-מועדית (כמו Boost): ניתן להוסיף כמה תאריכים + טווחים.
-   שלבים:
-   1) פרטי קשר — תלמיד/הורה, שם פרטי/משפחה, טלפון (type='tel')
-   2) אם הורה: שם פרטי/משפחה של התלמיד | אם תלמיד: דילוג
-   3) מקצוע / כיתה / יחידות (לי׳/י״א/י״ב) 
-   4) מסלול/תעריף + מורה מועדף (חובה: טקסט או "אין לי העדפה"; אם י״א/י״ב 5 יח׳ — אין "קבוצה")
-   5) זמינות — כמה מועדים (תאריך + טווח 13–16 / 16–19 / 19–21)
-   6) הערות — רשות
-   7) סיכום ושליחה — flow='onetime', status="לטיפול". */
+   לתלמידים שאינם מנויים. שמירה שטוחה לגיליון כך שכל השדות יופיעו.
+*/
 
 window.OneTimeWizard = (() => {
   const el = (id) => document.getElementById(id);
@@ -64,7 +57,7 @@ window.OneTimeWizard = (() => {
     return (/ok/i.test(raw) ? { ok:true, raw } : { ok:false, raw });
   }
 
-  /* UI helpers (כמו ב-Boost) */
+  // ===== UI helpers =====
   const fieldRow = ({label, name, type='text', placeholder='', value='', required=false}) => {
     const id = `f_${name}`;
     return `
@@ -250,7 +243,7 @@ window.OneTimeWizard = (() => {
     };
   }
 
-  // ===== שלב 5 החדש: זמינות רב-מועדית =====
+  // ===== שלב 5: זמינות רב-מועדית =====
   function step5_availability(){
     const optHtml = ['<option value="">— בחרו טווח —</option>']
       .concat(RANGES.map((r,i)=>`<option value="${i}">${r.label}</option>`)).join('');
@@ -390,9 +383,7 @@ window.OneTimeWizard = (() => {
 
     if(errs.length) return setStatus('חסר/לא תקין: ' + errs.join(', '));
 
-    // === תיקון קריטי לשמירה בגיליון ===
-    // 1) משטחים מערכים/אובייקטים למחרוזות (slots, timeRange)
-    // 2) שמות שדות תואמים לגיליון/אספן (studentFirst/studentLast)
+    // === שמירה שטוחה לגיליון ===
     const first = d.slots[0];
     const slotsStr = (d.slots || []).map(s => `${s.date} ${s.from}-${s.to}`).join(' | ');
     const timeRangeStr = first ? `${first.from}-${first.to}` : '';
@@ -402,7 +393,9 @@ window.OneTimeWizard = (() => {
       createdAt: new Date().toISOString(),
       project: (window.APP_CONFIG||{}).PROJECT || 'Houston',
       status: 'לטיפול',
-      source: 'יוסטון – שיעור חד־פעמי', // זיהוי ברור בגיליון
+      source: 'יוסטון – שיעור חד־פעמי',
+      customerType: 'לא מנוי',
+      isSubscriber: false,
 
       // פרטי יוצר הקשר
       role: d.role, firstName: d.firstName, lastName: d.lastName, phone: d.phone,
