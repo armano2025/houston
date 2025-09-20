@@ -390,23 +390,40 @@ window.OneTimeWizard = (() => {
 
     if(errs.length) return setStatus('חסר/לא תקין: ' + errs.join(', '));
 
-    // לשמירה ב-GAS: שולחים גם slots (העיקרי), וגם date/timeRange מהסלוט הראשון לשמירה נוחה/תאימות לאחור.
+    // === תיקון קריטי לשמירה בגיליון ===
+    // 1) משטחים מערכים/אובייקטים למחרוזות (slots, timeRange)
+    // 2) שמות שדות תואמים לגיליון/אספן (studentFirst/studentLast)
     const first = d.slots[0];
+    const slotsStr = (d.slots || []).map(s => `${s.date} ${s.from}-${s.to}`).join(' | ');
+    const timeRangeStr = first ? `${first.from}-${first.to}` : '';
+
     const payload = {
       flow: 'onetime',
       createdAt: new Date().toISOString(),
       project: (window.APP_CONFIG||{}).PROJECT || 'Houston',
       status: 'לטיפול',
+      source: 'יוסטון – שיעור חד־פעמי', // זיהוי ברור בגיליון
+
+      // פרטי יוצר הקשר
       role: d.role, firstName: d.firstName, lastName: d.lastName, phone: d.phone,
-      studentName: d.studentFirst||'', studentLastName: d.studentLast||'',
-      subject: d.subject, grade: d.grade, units: d.units||'',
+
+      // פרטי תלמיד (שמות תואמים)
+      studentFirst: d.studentFirst || '',
+      studentLast:  d.studentLast  || '',
+
+      // פרטי לימוד
+      subject: d.subject, grade: d.grade, units: d.units || '',
+
+      // מסלול ותעריף
       track: d.track, rate: d.rate, teacherPreference: d.teacherPreference,
-      // זמינות
-      slots: d.slots.map(s=>({date:s.date, from:s.from, to:s.to})),
-      date: first?.date || '',                      // תאימות לאחור
-      timeRange: first ? { from:first.from, to:first.to } : '', // GAS מנרמל למחרוזת
+
+      // זמינות – מחרוזות שטוחות
+      slots: slotsStr,
+      date: first?.date || '',
+      timeRange: timeRangeStr,
+
       // הערות
-      notes: d.notes||''
+      notes: d.notes || ''
     };
 
     try{
