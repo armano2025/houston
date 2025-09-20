@@ -390,7 +390,7 @@ window.OneTimeWizard = (() => {
 
     if(errs.length) return setStatus('חסר/לא תקין: ' + errs.join(', '));
 
-    // === משטחים ערכים לפני שליחה לגיליון ===
+    // === קריטי לשיטס: משטחים נתונים ושומרים שמות עמודות עקביים ===
     const first = d.slots[0];
     const slotsStr = (d.slots || []).map(s => `${s.date} ${s.from}-${s.to}`).join(' | ');
     const timeRangeStr = first ? `${first.from}-${first.to}` : '';
@@ -400,29 +400,22 @@ window.OneTimeWizard = (() => {
       createdAt: new Date().toISOString(),
       project: (window.APP_CONFIG||{}).PROJECT || 'Houston',
       status: 'לטיפול',
-      source: 'יוסטון – שיעור חד־פעמי',
+      source: 'יוסטון – שיעור חד־פעמי (לא מנוי)',
 
       // פרטי יוצר הקשר
-      role: d.role,
-      firstName: d.firstName,
-      lastName: d.lastName,
-      phone: d.phone,
+      role: d.role, firstName: d.firstName, lastName: d.lastName, phone: d.phone,
 
-      // פרטי תלמיד (לדרישות הגיליון)
+      // פרטי תלמיד (שמות תואמים לשאר הזרימות)
       studentFirst: d.studentFirst || '',
       studentLast:  d.studentLast  || '',
 
       // פרטי לימוד
-      subject: d.subject,
-      grade: d.grade,
-      units: d.units || '',
+      subject: d.subject, grade: d.grade, units: d.units || '',
 
       // מסלול ותעריף
-      track: d.track,
-      rate: d.rate,
-      teacherPreference: d.teacherPreference,
+      track: d.track, rate: d.rate, teacherPreference: d.teacherPreference,
 
-      // זמינות – שטוח
+      // זמינות — כמחרוזות
       slots: slotsStr,
       date: first?.date || '',
       timeRange: timeRangeStr,
