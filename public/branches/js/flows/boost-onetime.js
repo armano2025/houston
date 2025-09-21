@@ -1,8 +1,10 @@
 /* /public/branches/js/flows/boost-onetime.js
    ויזארד "שיעור חד־פעמי על בסיס מקום פנוי" – ללא צ'אט.
-   ★ תיקון קריטי: selectRow – הורדתי סוגריים מיותרת שגרמה לשגיאת תחביר ולכן הזרימה לא נטענה.
-   מיפוי מדויק ל־INTAKE_HEADERS.onetime (teacherPreference, preferredDate, timeRange, slots…).
+   תואם ל-INTAKE_HEADERS.onetime:
+   'preferredDate','timeRange','slots','slotsText' ועוד.
+   נשלח ב-Content-Type:text/plain כדי להימנע מ-preflight.
 */
+
 window.OneTimeWizard = (() => {
   const el = (id) => document.getElementById(id);
   const stepEl   = el('step');
@@ -18,47 +20,47 @@ window.OneTimeWizard = (() => {
   const State = { data:{}, stack:[] };
   const setStatus = (t='') => { statusEl && (statusEl.textContent = t); };
   const push = (fn) => { State.stack.push(fn); backBtn.disabled = State.stack.length<=1; };
-  const goBack = () => { if (State.stack.length>1){ State.stack.pop(); backBtn.disabled = State.stack.length<=1; State.stack[State.stack.length-1](); } };
+  const goBack = () => {
+    if (State.stack.length>1){
+      State.stack.pop();
+      backBtn.disabled = State.stack.length<=1;
+      State.stack[State.stack.length-1]();
+    }
+  };
   backBtn.onclick = goBack;
 
-  // ולידציה – נשתמש במה שיש בצ'אט אם נטען, אחרת גיבוי לוקאלי
   const Val = (window.Chat && window.Chat.Val) ? window.Chat.Val : {
     nonEmpty: s => String(s??'').trim().length>0,
     phoneIL: s => /^0\d{1,2}\d{7}$/.test(String(s??'').replace(/[^\d]/g,'')),
     date: s => /^\d{4}-\d{2}-\d{2}$/.test(s),
   };
 
-  // שליחה – משתמש קודם ב־Chat.sendLeadToSheet (ללא preflight). אחרת ישירות.
+  // שליחה ל־GAS: text/plain (בלי preflight) + תמיכה בתשובות טקסט/JSON
   async function send(payload){
-    try{
-      if (window.Chat?.sendLeadToSheet) return await window.Chat.sendLeadToSheet(payload);
-      const url = (window.APP_CONFIG||{}).SHEET_API_URL;
-      if (!url) throw new Error('SHEET_API_URL לא הוגדר');
+    if (window.Chat?.sendLeadToSheet) return await window.Chat.sendLeadToSheet(payload);
+    const url = (window.APP_CONFIG||{}).SHEET_API_URL;
+    if (!url) throw new Error('SHEET_API_URL לא הוגדר');
 
-      const res = await fetch(url, {
-        method:'POST',
-        headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body: JSON.stringify(payload),
-        mode:'cors',
-        redirect:'follow',
-        keepalive:true
-      });
+    const res = await fetch(url, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify(payload),
+      mode:'cors',
+      redirect:'follow',
+      keepalive:true
+    });
 
-      if (res.type === 'opaque') return { ok:true, opaque:true };
-      if (!res.ok){
-        const t = await res.text().catch(()=> '');
-        throw new Error(`HTTP ${res.status} ${res.statusText}${t?` — ${t.slice(0,140)}`:''}`);
-      }
-      const raw = await res.text();
-      try { return JSON.parse(raw); } catch(e){}
-      return (/ok/i.test(raw) ? { ok:true, raw } : { ok:false, raw });
-    }catch(err){
-      console.error('[OneTimeWizard.send] failed:', err);
-      throw err;
+    if (res.type === 'opaque') return { ok:true, opaque:true };
+    if (!res.ok){
+      const t = await res.text().catch(()=> '');
+      throw new Error(`HTTP ${res.status} ${res.statusText}${t?` — ${t.slice(0,140)}`:''}`);
     }
+    const raw = await res.text();
+    try { return JSON.parse(raw); } catch(e){}
+    return (/ok/i.test(raw) ? { ok:true, raw } : { ok:false, raw });
   }
 
-  /* ===== עזרי UI ===== */
+  /* ===== UI helpers ===== */
   const fieldRow = ({label, name, type='text', placeholder='', value='', required=false}) => {
     const id = `f_${name}`;
     return `
@@ -67,12 +69,10 @@ window.OneTimeWizard = (() => {
         <input id="${id}" name="${name}" type="${type}" value="${value||''}" placeholder="${placeholder}" ${required?'required':''}/>
       </div>`;
   };
-
   const selectRow = ({label, name, options=[], required=false})=>{
     const id = `f_${name}`;
     const opts = ['<option value="">— בחרו —</option>'].concat(
       options.map(o => {
-        // ★ כאן הייתה השגיאה: typeof o==='string']  ← סוגריים עודפת
         const v = (typeof o==='string') ? o : (o.value||o.label);
         const t = (typeof o==='string') ? o : (o.label||o.value);
         return `<option value="${String(v)}">${String(t)}</option>`;
@@ -84,7 +84,6 @@ window.OneTimeWizard = (() => {
         <select id="${id}" name="${name}" ${required?'required':''}>${opts}</select>
       </div>`;
   };
-
   const chipsRow = ({label, name, options=[]})=>{
     const chips = options.map(t=>`<button type="button" class="chip" data-name="${name}" data-value="${t}" aria-pressed="false">${t}</button>`).join('');
     return `
@@ -93,7 +92,6 @@ window.OneTimeWizard = (() => {
         <div class="chips" id="chips_${name}">${chips}</div>
       </div>`;
   };
-
   const bindSingleChips = (id) => {
     const cont = el(id);
     let picked = '';
@@ -141,6 +139,7 @@ window.OneTimeWizard = (() => {
 
   function step2_studentIfParent(){
     if (State.data.role !== 'הורה'){ step3_studyBasics(); return; }
+
     stepEl.innerHTML = `
       <div class="title-row"><h3>פרטי תלמיד/ה 👨‍🚀</h3><div class="muted">שלב 2/7</div></div>
       ${fieldRow({label:'שם פרטי התלמיד/ה',  name:'studentFirst', placeholder:'לדוגמה: נועה', required:true})}
@@ -247,7 +246,6 @@ window.OneTimeWizard = (() => {
     };
   }
 
-  // שלב 5: זמינות עם כמה מועדים
   function step5_availability(){
     const optHtml = ['<option value="">— בחרו טווח —</option>']
       .concat(RANGES.map((r,i)=>`<option value="${i}">${r.label}</option>`)).join('');
@@ -255,13 +253,17 @@ window.OneTimeWizard = (() => {
 
     stepEl.innerHTML = `
       <div class="title-row"><h3>זמינות לשיעור 👨‍🚀</h3><div class="muted">שלב 5/7</div></div>
-      ${fieldRow({label:'תאריך', name:'slotDate', type:'date'})}
+      ${fieldRow({label:'תאריך', name:'slotDate', type:'date', required:false})}
       <div class="field">
         <label for="f_slotRange">טווח שעות</label>
-        <select id="f_slotRange" name="slotRange">${optHtml}</select>
+        <select id="f_slotRange" name="slotRange">
+          ${optHtml}
+        </select>
       </div>
 
-      <div class="wizard-actions"><button class="btn" id="add">+ הוסף מועד</button></div>
+      <div class="wizard-actions">
+        <button class="btn" id="add">+ הוסף מועד</button>
+      </div>
 
       <div class="field">
         <label>מועדים שנבחרו</label>
@@ -295,11 +297,18 @@ window.OneTimeWizard = (() => {
       if(String(idx)==='') return setStatus('נא לבחור טווח שעות');
       const r = RANGES[Number(idx)];
       chosen.push({ date, from:r.from, to:r.to });
-      setStatus(''); el('f_slotDate').value=''; el('f_slotRange').value=''; redraw();
+      setStatus('');
+      el('f_slotDate').value=''; el('f_slotRange').value='';
+      redraw();
     };
 
     el('prev').onclick = goBack;
-    el('next').onclick = ()=>{ if(!chosen.length) return setStatus('הוסיפו לפחות מועד אחד'); State.data.slots = chosen.slice(); setStatus(''); step6_notes(); };
+    el('next').onclick = ()=>{
+      if(!chosen.length) return setStatus('הוסיפו לפחות מועד אחד');
+      State.data.slots = chosen.slice();
+      setStatus('');
+      step6_notes();
+    };
   }
 
   function step6_notes(){
@@ -316,7 +325,10 @@ window.OneTimeWizard = (() => {
     push(step6_notes);
 
     el('prev').onclick = goBack;
-    el('next').onclick = ()=>{ State.data.notes = (el('f_notes').value||'').trim(); step7_summary(); };
+    el('next').onclick = ()=>{
+      State.data.notes = (el('f_notes').value||'').trim();
+      step7_summary();
+    };
   }
 
   function step7_summary(){
@@ -370,8 +382,10 @@ window.OneTimeWizard = (() => {
     if(!Val.nonEmpty(d.teacherPreference)) errs.push('teacherPreference');
 
     if(!Array.isArray(d.slots) || !d.slots.length) errs.push('slots');
+
     if(errs.length) return setStatus('חסר/לא תקין: ' + errs.join(', '));
 
+    // לשליחה ל-GAS: שמות שדות תואמים במדויק ל-INTAKE_HEADERS.onetime
     const first = d.slots[0];
     const payload = {
       flow: 'onetime',
@@ -383,17 +397,17 @@ window.OneTimeWizard = (() => {
       // פרטי יוצר קשר
       role: d.role, firstName: d.firstName, lastName: d.lastName, phone: d.phone,
 
-      // פרטי תלמיד (שמות כפי שה־GAS מצפה להם)
+      // פרטי תלמיד (לפי שמות העמודות בגיליון)
       studentName: d.studentFirst || '',
       studentLastName: d.studentLast || '',
 
-      // פרטי לימוד
+      // לימודים
       subject: d.subject, grade: d.grade, units: d.units || '',
 
       // מסלול ותעריף
       track: d.track, rate: d.rate, teacherPreference: d.teacherPreference,
 
-      // זמינות
+      // זמינות — first + כל המועדים (ה-GAS ימלא slotsText)
       preferredDate: first?.date || '',
       timeRange: first ? { from:first.from, to:first.to } : '',
       slots: d.slots.map(s => ({ date:s.date, from:s.from, to:s.to })),
@@ -419,22 +433,16 @@ window.OneTimeWizard = (() => {
         throw new Error(res && res.raw ? res.raw : 'server_error');
       }
     }catch(err){
-      console.error('[OneTimeWizard.submit] error:', err);
       setStatus('שגיאה: ' + err.message);
     }
   }
 
   function start(){
-    try{
-      State.data = {};
-      State.stack = [];
-      backBtn.disabled = true;
-      setStatus('');
-      step1_contact();
-    }catch(e){
-      console.error('[OneTimeWizard.start] failed to init:', e);
-      setStatus('שגיאה בטעינת הטופס. נסו לרענן.');
-    }
+    State.data = {};
+    State.stack = [];
+    backBtn.disabled = true;
+    setStatus('');
+    step1_contact();
   }
 
   return { start };
