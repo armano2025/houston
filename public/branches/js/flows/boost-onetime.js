@@ -390,24 +390,21 @@ window.OneTimeWizard = (() => {
 
     if(errs.length) return setStatus('חסר/לא תקין: ' + errs.join(', '));
 
-    // === קריטי לשיטס: משטחים נתונים ושומרים שמות עמודות עקביים ===
+    // לשמירה ב-GAS: שליחה בשמות ובמבנה שה־Webhook מצפה להם.
     const first = d.slots[0];
-    const slotsStr = (d.slots || []).map(s => `${s.date} ${s.from}-${s.to}`).join(' | ');
-    const timeRangeStr = first ? `${first.from}-${first.to}` : '';
-
     const payload = {
       flow: 'onetime',
       createdAt: new Date().toISOString(),
       project: (window.APP_CONFIG||{}).PROJECT || 'Houston',
       status: 'לטיפול',
-      source: 'יוסטון – שיעור חד־פעמי (לא מנוי)',
+      source: 'יוסטון – שיעור חד־פעמי',
 
       // פרטי יוצר הקשר
       role: d.role, firstName: d.firstName, lastName: d.lastName, phone: d.phone,
 
-      // פרטי תלמיד (שמות תואמים לשאר הזרימות)
-      studentFirst: d.studentFirst || '',
-      studentLast:  d.studentLast  || '',
+      // פרטי תלמיד (כמו ב־INTAKE_HEADERS)
+      studentName: d.studentFirst || '',
+      studentLastName: d.studentLast || '',
 
       // פרטי לימוד
       subject: d.subject, grade: d.grade, units: d.units || '',
@@ -415,10 +412,10 @@ window.OneTimeWizard = (() => {
       // מסלול ותעריף
       track: d.track, rate: d.rate, teacherPreference: d.teacherPreference,
 
-      // זמינות — כמחרוזות
-      slots: slotsStr,
-      date: first?.date || '',
-      timeRange: timeRangeStr,
+      // זמינות
+      preferredDate: first?.date || '',                  // ← שם העמודה המבוקש
+      timeRange: first ? { from:first.from, to:first.to } : '', // ה־GAS ימיר למחרוזת
+      slots: d.slots.map(s => ({ date:s.date, from:s.from, to:s.to })),
 
       // הערות
       notes: d.notes || ''
