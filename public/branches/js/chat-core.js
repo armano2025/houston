@@ -1,6 +1,6 @@
 /* /public/branches/js/chat-core.js
-   ליבת עזר ל־Front-End: ולידציה בסיסית + שליחה ל־Google Apps Script.
-   שומרת על ממשק אחיד: Chat.Val ול־Chat.sendLeadToSheet.
+   ליבת עזר ל־Front-End: ולידציה + שליחה ל־Google Apps Script.
+   שליחה כ-text/plain (ללא preflight), פענוח תשובה גם אם אינה JSON, ולוג טכני לזיהוי הטאב.
 */
 (() => {
   const area    = document.getElementById('area');
@@ -58,9 +58,7 @@
       throw new Error(msg);
     }
 
-    // לוג זעיר לזיהוי טאב היעד (מופיע ב־DevTools בלבד)
     if (data.sheet) console.info('[Sheets OK]', { flow: payload.flow, sheet: data.sheet, caseId: data.caseId });
-
     return data; // { ok:true, caseId, sheet, ... }
   }
 
