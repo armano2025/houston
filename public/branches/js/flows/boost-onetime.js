@@ -1,11 +1,10 @@
 /* /public/branches/js/flows/boost-onetime.js
    ויזארד "שיעור חד־פעמי על בסיס מקום פנוי" – ללא צ'אט.
-   ✅ תיקון קריטי: התאמה מלאה ל-INTAKE_HEADERS.onetime ב-GAS:
-      - studentName / studentLastName (לא studentFirst/studentLast)
-      - preferredDate (לא date)
-      - timeRange כאובייקט {from,to} (ה-GAS ממיר למחרוזת)
-      - slots כמערך אובייקטים [{date,from,to}] כדי ש-GAS יבנה slotsText
-   ✅ שליחה דרך chat-core.js (שולח origin=, מחזיר שגיאה ברורה)
+   נקודות מפתח:
+   - שליחה ב-Content-Type:text/plain למניעת preflight (תואם chat-core.js)
+   - מיפוי מדויק לעמודות INTAKE_HEADERS.onetime:
+     studentName, studentLastName, preferredDate, timeRange (ימורשר ל-"from-to" ע"י GAS), teacherPreference, slots
+   - GAS יוצר גם slotsText אוטומטית.
 */
 
 window.OneTimeWizard = (() => {
@@ -32,19 +31,19 @@ window.OneTimeWizard = (() => {
   };
   backBtn.onclick = goBack;
 
-  // ולידציה (אם chat-core קיים — נשתמש בו)
+  // ולידציה בסיסית
   const Val = (window.Chat && window.Chat.Val) ? window.Chat.Val : {
     nonEmpty: s => String(s??'').trim().length>0,
     phoneIL: s => /^0\d{1,2}\d{7}$/.test(String(s??'').replace(/[^\d]/g,'')),
     date: s => /^\d{4}-\d{2}-\d{2}$/.test(s),
+    time: s => /^\d{2}:\d{2}$/.test(s),
   };
 
-  // שליחה — דרך chat-core אם זמין (כולל origin=)
+  // שליחה עמידה (אם chat-core קיים – נשתמש בו)
   async function send(payload){
     if (window.Chat?.sendLeadToSheet) return await window.Chat.sendLeadToSheet(payload);
-    const base = (window.APP_CONFIG||{}).SHEET_API_URL;
-    if (!base) throw new Error('SHEET_API_URL לא הוגדר');
-    const url = base + (base.includes('?') ? '&' : '?') + 'origin=' + encodeURIComponent(location.origin);
+    const url = (window.APP_CONFIG||{}).SHEET_API_URL;
+    if (!url) throw new Error('SHEET_API_URL לא הוגדר');
 
     const res = await fetch(url, {
       method:'POST',
@@ -56,9 +55,13 @@ window.OneTimeWizard = (() => {
     });
 
     if (res.type === 'opaque') return { ok:true, opaque:true };
-    const raw = await res.text().catch(()=> '');
-    try { const j = raw ? JSON.parse(raw) : {}; return j; } catch(_){}
-    return (/ok/i.test(raw) ? { ok:true, raw } : { ok:false, raw, error:'server_text' });
+    if (!res.ok){
+      const t = await res.text().catch(()=> '');
+      throw new Error(`HTTP ${res.status} ${res.statusText}${t?` — ${t.slice(0,140)}`:''}`);
+    }
+    const raw = await res.text();
+    try { return JSON.parse(raw); } catch(e){}
+    return (/ok/i.test(raw) ? { ok:true, raw } : { ok:false, raw });
   }
 
   /* ===== UI helpers ===== */
@@ -247,7 +250,7 @@ window.OneTimeWizard = (() => {
     };
   }
 
-  // ===== שלב 5: זמינות רב-מועדית =====
+  // שלב 5: זמינות עם ריבוי מועדים
   function step5_availability(){
     const optHtml = ['<option value="">— בחרו טווח —</option>']
       .concat(RANGES.map((r,i)=>`<option value="${i}">${r.label}</option>`)).join('');
@@ -258,9 +261,7 @@ window.OneTimeWizard = (() => {
       ${fieldRow({label:'תאריך', name:'slotDate', type:'date', required:false})}
       <div class="field">
         <label for="f_slotRange">טווח שעות</label>
-        <select id="f_slotRange" name="slotRange">
-          ${optHtml}
-        </select>
+        <select id="f_slotRange" name="slotRange">${optHtml}</select>
       </div>
 
       <div class="wizard-actions">
@@ -387,7 +388,7 @@ window.OneTimeWizard = (() => {
 
     if(errs.length) return setStatus('חסר/לא תקין: ' + errs.join(', '));
 
-    // ⚠️ כאן הקסם: שמות/מבנה תואמים ל-INTAKE_HEADERS.onetime
+    // הכנה ל־Webhook: שדות לפי INTAKE_HEADERS.onetime
     const first = d.slots[0];
     const payload = {
       flow: 'onetime',
@@ -396,20 +397,20 @@ window.OneTimeWizard = (() => {
       status: 'לטיפול',
       source: 'יוסטון – שיעור חד־פעמי',
 
-      // פרטי יוצר קשר
+      // יוצר קשר
       role: d.role, firstName: d.firstName, lastName: d.lastName, phone: d.phone,
 
-      // פרטי תלמיד (שמות תואמים בדיוק ל-GAS)
+      // תלמיד (שמות תואמים לגיליון)
       studentName: d.studentFirst || '',
       studentLastName: d.studentLast || '',
 
-      // פרטי לימוד
+      // לימודים
       subject: d.subject, grade: d.grade, units: d.units || '',
 
       // מסלול ותעריף
       track: d.track, rate: d.rate, teacherPreference: d.teacherPreference,
 
-      // זמינות: first → preferredDate + timeRange; full → slots[]
+      // זמינות: preferredDate + timeRange (object → GAS ינרמל ל-"from-to") + מערך slots
       preferredDate: first?.date || '',
       timeRange: first ? { from:first.from, to:first.to } : '',
       slots: d.slots.map(s=>({ date:s.date, from:s.from, to:s.to })),
@@ -432,7 +433,7 @@ window.OneTimeWizard = (() => {
         backBtn.disabled = true;
         State.stack = [stepEl.innerHTML];
       }else{
-        throw new Error(res && res.raw ? res.raw : (res?.error || 'server_error'));
+        throw new Error(res && res.raw ? res.raw : 'server_error');
       }
     }catch(err){
       setStatus('שגיאה: ' + err.message);
