@@ -1,6 +1,6 @@
 /* /public/branches/js/flows/boost-onetime.js
    ויזארד "שיעור חד־פעמי על בסיס מקום פנוי" – ללא צ'אט.
-   מיפוי מדויק ל־INTAKE_HEADERS.onetime (כולל preferredDate, timeRange, slots, teacherPreference).
+   מיפוי מדויק ל־INTAKE_HEADERS.onetime (teacherPreference, preferredDate, timeRange, slots…).
 */
 window.OneTimeWizard = (() => {
   const el = (id) => document.getElementById(id);
@@ -30,6 +30,7 @@ window.OneTimeWizard = (() => {
     if (window.Chat?.sendLeadToSheet) return await window.Chat.sendLeadToSheet(payload);
     const url = (window.APP_CONFIG||{}).SHEET_API_URL;
     if (!url) throw new Error('SHEET_API_URL לא הוגדר');
+
     const res = await fetch(url, {
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
@@ -38,6 +39,7 @@ window.OneTimeWizard = (() => {
       redirect:'follow',
       keepalive:true
     });
+
     if (res.type === 'opaque') return { ok:true, opaque:true };
     if (!res.ok){
       const t = await res.text().catch(()=> '');
@@ -62,7 +64,7 @@ window.OneTimeWizard = (() => {
     const opts = ['<option value="">— בחרו —</option>'].concat(
       options.map(o => {
         const v = (typeof o==='string') ? o : (o.value||o.label);
-        const t = (typeof o==='string') ? o : (o.label||o.value);
+        const t = (typeof o==='string']) ? o : (o.label||o.value);
         return `<option value="${String(v)}">${String(t)}</option>`;
       })
     ).join('');
@@ -340,13 +342,20 @@ window.OneTimeWizard = (() => {
     if(!Val.nonEmpty(d.firstName))  errs.push('firstName');
     if(!Val.nonEmpty(d.lastName))   errs.push('lastName');
     if(!Val.phoneIL(d.phone))       errs.push('phone');
-    if(d.role==='הורה'){ if(!Val.nonEmpty(d.studentFirst)) errs.push('studentFirst'); if(!Val.nonEmpty(d.studentLast)) errs.push('studentLast'); }
+
+    if(d.role==='הורה'){
+      if(!Val.nonEmpty(d.studentFirst)) errs.push('studentFirst');
+      if(!Val.nonEmpty(d.studentLast))  errs.push('studentLast');
+    }
+
     if(!Val.nonEmpty(d.subject))   errs.push('subject');
     if(!Val.nonEmpty(d.grade))     errs.push('grade');
     if(['י׳','י״א','י״ב'].includes(d.grade||'') && !Val.nonEmpty(d.units)) errs.push('units');
+
     if(!Val.nonEmpty(d.track))     errs.push('track');
     if(!Val.nonEmpty(d.rate))      errs.push('rate');
     if(!Val.nonEmpty(d.teacherPreference)) errs.push('teacherPreference');
+
     if(!Array.isArray(d.slots) || !d.slots.length) errs.push('slots');
     if(errs.length) return setStatus('חסר/לא תקין: ' + errs.join(', '));
 
@@ -357,13 +366,20 @@ window.OneTimeWizard = (() => {
       project: (window.APP_CONFIG||{}).PROJECT || 'Houston',
       status: 'לטיפול',
       source: 'יוסטון – שיעור חד־פעמי',
+
       role: d.role, firstName: d.firstName, lastName: d.lastName, phone: d.phone,
-      studentName: d.studentFirst || '', studentLastName: d.studentLast || '',
+
+      studentName: d.studentFirst || '',
+      studentLastName: d.studentLast || '',
+
       subject: d.subject, grade: d.grade, units: d.units || '',
+
       track: d.track, rate: d.rate, teacherPreference: d.teacherPreference,
+
       preferredDate: first?.date || '',
       timeRange: first ? { from:first.from, to:first.to } : '',
       slots: d.slots.map(s => ({ date:s.date, from:s.from, to:s.to })),
+
       notes: d.notes || ''
     };
 
