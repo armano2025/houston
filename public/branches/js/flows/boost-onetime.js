@@ -1,5 +1,6 @@
 /* /public/branches/js/flows/boost-onetime.js
    ויזארד "שיעור חד־פעמי על בסיס מקום פנוי" – ללא צ'אט.
+   ★ תיקון קריטי: selectRow – הורדתי סוגריים מיותרת שגרמה לשגיאת תחביר ולכן הזרימה לא נטענה.
    מיפוי מדויק ל־INTAKE_HEADERS.onetime (teacherPreference, preferredDate, timeRange, slots…).
 */
 window.OneTimeWizard = (() => {
@@ -20,37 +21,44 @@ window.OneTimeWizard = (() => {
   const goBack = () => { if (State.stack.length>1){ State.stack.pop(); backBtn.disabled = State.stack.length<=1; State.stack[State.stack.length-1](); } };
   backBtn.onclick = goBack;
 
+  // ולידציה – נשתמש במה שיש בצ'אט אם נטען, אחרת גיבוי לוקאלי
   const Val = (window.Chat && window.Chat.Val) ? window.Chat.Val : {
     nonEmpty: s => String(s??'').trim().length>0,
     phoneIL: s => /^0\d{1,2}\d{7}$/.test(String(s??'').replace(/[^\d]/g,'')),
     date: s => /^\d{4}-\d{2}-\d{2}$/.test(s),
   };
 
+  // שליחה – משתמש קודם ב־Chat.sendLeadToSheet (ללא preflight). אחרת ישירות.
   async function send(payload){
-    if (window.Chat?.sendLeadToSheet) return await window.Chat.sendLeadToSheet(payload);
-    const url = (window.APP_CONFIG||{}).SHEET_API_URL;
-    if (!url) throw new Error('SHEET_API_URL לא הוגדר');
+    try{
+      if (window.Chat?.sendLeadToSheet) return await window.Chat.sendLeadToSheet(payload);
+      const url = (window.APP_CONFIG||{}).SHEET_API_URL;
+      if (!url) throw new Error('SHEET_API_URL לא הוגדר');
 
-    const res = await fetch(url, {
-      method:'POST',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify(payload),
-      mode:'cors',
-      redirect:'follow',
-      keepalive:true
-    });
+      const res = await fetch(url, {
+        method:'POST',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify(payload),
+        mode:'cors',
+        redirect:'follow',
+        keepalive:true
+      });
 
-    if (res.type === 'opaque') return { ok:true, opaque:true };
-    if (!res.ok){
-      const t = await res.text().catch(()=> '');
-      throw new Error(`HTTP ${res.status} ${res.statusText}${t?` — ${t.slice(0,140)}`:''}`);
+      if (res.type === 'opaque') return { ok:true, opaque:true };
+      if (!res.ok){
+        const t = await res.text().catch(()=> '');
+        throw new Error(`HTTP ${res.status} ${res.statusText}${t?` — ${t.slice(0,140)}`:''}`);
+      }
+      const raw = await res.text();
+      try { return JSON.parse(raw); } catch(e){}
+      return (/ok/i.test(raw) ? { ok:true, raw } : { ok:false, raw });
+    }catch(err){
+      console.error('[OneTimeWizard.send] failed:', err);
+      throw err;
     }
-    const raw = await res.text();
-    try { return JSON.parse(raw); } catch(e){}
-    return (/ok/i.test(raw) ? { ok:true, raw } : { ok:false, raw });
   }
 
-  /* UI helpers */
+  /* ===== עזרי UI ===== */
   const fieldRow = ({label, name, type='text', placeholder='', value='', required=false}) => {
     const id = `f_${name}`;
     return `
@@ -59,12 +67,14 @@ window.OneTimeWizard = (() => {
         <input id="${id}" name="${name}" type="${type}" value="${value||''}" placeholder="${placeholder}" ${required?'required':''}/>
       </div>`;
   };
+
   const selectRow = ({label, name, options=[], required=false})=>{
     const id = `f_${name}`;
     const opts = ['<option value="">— בחרו —</option>'].concat(
       options.map(o => {
+        // ★ כאן הייתה השגיאה: typeof o==='string']  ← סוגריים עודפת
         const v = (typeof o==='string') ? o : (o.value||o.label);
-        const t = (typeof o==='string']) ? o : (o.label||o.value);
+        const t = (typeof o==='string') ? o : (o.label||o.value);
         return `<option value="${String(v)}">${String(t)}</option>`;
       })
     ).join('');
@@ -74,6 +84,7 @@ window.OneTimeWizard = (() => {
         <select id="${id}" name="${name}" ${required?'required':''}>${opts}</select>
       </div>`;
   };
+
   const chipsRow = ({label, name, options=[]})=>{
     const chips = options.map(t=>`<button type="button" class="chip" data-name="${name}" data-value="${t}" aria-pressed="false">${t}</button>`).join('');
     return `
@@ -82,6 +93,7 @@ window.OneTimeWizard = (() => {
         <div class="chips" id="chips_${name}">${chips}</div>
       </div>`;
   };
+
   const bindSingleChips = (id) => {
     const cont = el(id);
     let picked = '';
@@ -94,7 +106,7 @@ window.OneTimeWizard = (() => {
     return ()=> picked;
   };
 
-  /* ===== Steps ===== */
+  /* ===== שלבים ===== */
 
   function step1_contact(){
     stepEl.innerHTML = `
@@ -235,6 +247,7 @@ window.OneTimeWizard = (() => {
     };
   }
 
+  // שלב 5: זמינות עם כמה מועדים
   function step5_availability(){
     const optHtml = ['<option value="">— בחרו טווח —</option>']
       .concat(RANGES.map((r,i)=>`<option value="${i}">${r.label}</option>`)).join('');
@@ -367,19 +380,25 @@ window.OneTimeWizard = (() => {
       status: 'לטיפול',
       source: 'יוסטון – שיעור חד־פעמי',
 
+      // פרטי יוצר קשר
       role: d.role, firstName: d.firstName, lastName: d.lastName, phone: d.phone,
 
+      // פרטי תלמיד (שמות כפי שה־GAS מצפה להם)
       studentName: d.studentFirst || '',
       studentLastName: d.studentLast || '',
 
+      // פרטי לימוד
       subject: d.subject, grade: d.grade, units: d.units || '',
 
+      // מסלול ותעריף
       track: d.track, rate: d.rate, teacherPreference: d.teacherPreference,
 
+      // זמינות
       preferredDate: first?.date || '',
       timeRange: first ? { from:first.from, to:first.to } : '',
       slots: d.slots.map(s => ({ date:s.date, from:s.from, to:s.to })),
 
+      // הערות
       notes: d.notes || ''
     };
 
@@ -400,10 +419,23 @@ window.OneTimeWizard = (() => {
         throw new Error(res && res.raw ? res.raw : 'server_error');
       }
     }catch(err){
+      console.error('[OneTimeWizard.submit] error:', err);
       setStatus('שגיאה: ' + err.message);
     }
   }
 
-  function start(){ State.data = {}; State.stack = []; backBtn.disabled = true; setStatus(''); step1_contact(); }
+  function start(){
+    try{
+      State.data = {};
+      State.stack = [];
+      backBtn.disabled = true;
+      setStatus('');
+      step1_contact();
+    }catch(e){
+      console.error('[OneTimeWizard.start] failed to init:', e);
+      setStatus('שגיאה בטעינת הטופס. נסו לרענן.');
+    }
+  }
+
   return { start };
 })();
