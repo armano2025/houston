@@ -1,10 +1,11 @@
 /* /public/branches/js/flows/boost-onetime.js
    ויזארד "שיעור חד־פעמי על בסיס מקום פנוי" – ללא צ'אט.
-   חשוב: שמות השדות המועברים ל־Webhook מותאמים ל־INTAKE_HEADERS.onetime:
-   - studentName / studentLastName (לא studentFirst/Last)
-   - preferredDate (לא date)
-   - timeRange כאובייקט {from,to} – ה־GAS ממיר למחרוזת
-   - slots כמערך אובייקטים – ה־GAS מייצר slotsText לבד
+   ✅ תיקון קריטי: התאמה מלאה ל-INTAKE_HEADERS.onetime ב-GAS:
+      - studentName / studentLastName (לא studentFirst/studentLast)
+      - preferredDate (לא date)
+      - timeRange כאובייקט {from,to} (ה-GAS ממיר למחרוזת)
+      - slots כמערך אובייקטים [{date,from,to}] כדי ש-GAS יבנה slotsText
+   ✅ שליחה דרך chat-core.js (שולח origin=, מחזיר שגיאה ברורה)
 */
 
 window.OneTimeWizard = (() => {
@@ -31,18 +32,19 @@ window.OneTimeWizard = (() => {
   };
   backBtn.onclick = goBack;
 
-  // ולידציה בסיסית; אם chat-core טעון – משתמשים בו כדי לשמור אחידות בין זרימות
+  // ולידציה (אם chat-core קיים — נשתמש בו)
   const Val = (window.Chat && window.Chat.Val) ? window.Chat.Val : {
     nonEmpty: s => String(s??'').trim().length>0,
     phoneIL: s => /^0\d{1,2}\d{7}$/.test(String(s??'').replace(/[^\d]/g,'')),
-    date:     s => /^\d{4}-\d{2}-\d{2}$/.test(s),
+    date: s => /^\d{4}-\d{2}-\d{2}$/.test(s),
   };
 
-  // שליחה עמידה ל־GAS: ללא preflight (text/plain), תומך גם בתשובת טקסט
+  // שליחה — דרך chat-core אם זמין (כולל origin=)
   async function send(payload){
     if (window.Chat?.sendLeadToSheet) return await window.Chat.sendLeadToSheet(payload);
-    const url = (window.APP_CONFIG||{}).SHEET_API_URL;
-    if (!url) throw new Error('SHEET_API_URL לא הוגדר');
+    const base = (window.APP_CONFIG||{}).SHEET_API_URL;
+    if (!base) throw new Error('SHEET_API_URL לא הוגדר');
+    const url = base + (base.includes('?') ? '&' : '?') + 'origin=' + encodeURIComponent(location.origin);
 
     const res = await fetch(url, {
       method:'POST',
@@ -54,16 +56,12 @@ window.OneTimeWizard = (() => {
     });
 
     if (res.type === 'opaque') return { ok:true, opaque:true };
-    if (!res.ok){
-      const t = await res.text().catch(()=> '');
-      throw new Error(`HTTP ${res.status} ${res.statusText}${t?` — ${t.slice(0,140)}`:''}`);
-    }
-    const raw = await res.text();
-    try { return JSON.parse(raw); } catch(e){}
-    return (/ok/i.test(raw) ? { ok:true, raw } : { ok:false, raw });
+    const raw = await res.text().catch(()=> '');
+    try { const j = raw ? JSON.parse(raw) : {}; return j; } catch(_){}
+    return (/ok/i.test(raw) ? { ok:true, raw } : { ok:false, raw, error:'server_text' });
   }
 
-  /* ===== עזרי UI קצרים ===== */
+  /* ===== UI helpers ===== */
   const fieldRow = ({label, name, type='text', placeholder='', value='', required=false}) => {
     const id = `f_${name}`;
     return `
@@ -130,10 +128,10 @@ window.OneTimeWizard = (() => {
       const firstName = el('f_firstName').value.trim();
       const lastName  = el('f_lastName').value.trim();
       const phone     = el('f_phone').value.replace(/[^\d]/g,'');
-      if(!Val.nonEmpty(role))      return setStatus('נא לבחור: תלמיד/הורה');
-      if(!Val.nonEmpty(firstName)) return setStatus('נא למלא שם פרטי');
-      if(!Val.nonEmpty(lastName))  return setStatus('נא למלא שם משפחה');
-      if(!Val.phoneIL(phone))      return setStatus('טלפון לא תקין');
+      if(!Val.nonEmpty(role))     return setStatus('נא לבחור: תלמיד/הורה');
+      if(!Val.nonEmpty(firstName))return setStatus('נא למלא שם פרטי');
+      if(!Val.nonEmpty(lastName)) return setStatus('נא למלא שם משפחה');
+      if(!Val.phoneIL(phone))     return setStatus('טלפון לא תקין');
       setStatus('');
       Object.assign(State.data, { role, firstName, lastName, phone });
       step2_studentIfParent();
@@ -205,7 +203,6 @@ window.OneTimeWizard = (() => {
   }
 
   function step4_trackRateTeacher(){
-    // אם י״א/י״ב 5 יח' — אין "קבוצה"
     const isHigh5 = (['י״א','י״ב'].includes(State.data.grade) && State.data.units==='5');
     const tracks = isHigh5
       ? ['שיעור במסלול טריפל - 100₪','שיעור במסלול פרטי - 160₪']
@@ -390,7 +387,7 @@ window.OneTimeWizard = (() => {
 
     if(errs.length) return setStatus('חסר/לא תקין: ' + errs.join(', '));
 
-    // ==== שליחה ל־GAS בשמות ובמבנה הנכונים ====
+    // ⚠️ כאן הקסם: שמות/מבנה תואמים ל-INTAKE_HEADERS.onetime
     const first = d.slots[0];
     const payload = {
       flow: 'onetime',
@@ -399,10 +396,10 @@ window.OneTimeWizard = (() => {
       status: 'לטיפול',
       source: 'יוסטון – שיעור חד־פעמי',
 
-      // פרטי יוצר הקשר
+      // פרטי יוצר קשר
       role: d.role, firstName: d.firstName, lastName: d.lastName, phone: d.phone,
 
-      // פרטי תלמיד — חשוב: השמות ש־GAS מצפה להם
+      // פרטי תלמיד (שמות תואמים בדיוק ל-GAS)
       studentName: d.studentFirst || '',
       studentLastName: d.studentLast || '',
 
@@ -412,10 +409,10 @@ window.OneTimeWizard = (() => {
       // מסלול ותעריף
       track: d.track, rate: d.rate, teacherPreference: d.teacherPreference,
 
-      // זמינות — preferredDate + timeRange מהסלוט הראשון; כל הסלוטים ב־slots
+      // זמינות: first → preferredDate + timeRange; full → slots[]
       preferredDate: first?.date || '',
       timeRange: first ? { from:first.from, to:first.to } : '',
-      slots: d.slots.map(s => ({ date:s.date, from:s.from, to:s.to })),
+      slots: d.slots.map(s=>({ date:s.date, from:s.from, to:s.to })),
 
       // הערות
       notes: d.notes || ''
@@ -435,7 +432,7 @@ window.OneTimeWizard = (() => {
         backBtn.disabled = true;
         State.stack = [stepEl.innerHTML];
       }else{
-        throw new Error(res && res.raw ? res.raw : 'server_error');
+        throw new Error(res && res.raw ? res.raw : (res?.error || 'server_error'));
       }
     }catch(err){
       setStatus('שגיאה: ' + err.message);
