@@ -12,18 +12,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap" rel="stylesheet" />
-  <!-- גרסת העיצוב המאוחדת שמסתירה לוגו ישן (.logo) -->
   <link rel="stylesheet" href="../../styles.light.css?v=4.1" />
 </head>
 <body class="has-toplogo">
-  <!-- לוגו מותג קבוע (קובץ: /public/assets/IMG_9789.jpeg) -->
+  <!-- לוגו מותג קבוע -->
   <a class="toplogo" href="../../index.html" aria-label="בראונשטיין – דף הבית">
     <img src="../../assets/IMG_9789.jpeg" alt="לוגו בראונשטיין" loading="eager" fetchpriority="high">
   </a>
 
   <main class="wrap">
     <section class="card wizard-wrap">
-      <!-- טופ־בר (אחיד מול שאר הזרימות) -->
+      <!-- טופ־בר -->
       <div class="topbar">
         <div class="right" style="display:flex;gap:8px;align-items:center">
           <button class="btn" id="backBtn" disabled>חזרה</button>
@@ -41,7 +40,7 @@
         </div>
       </header>
 
-      <!-- תוכן הוויזארד (נטען דינמית) -->
+      <!-- תוכן הוויזארד -->
       <div class="wizard-step body" id="step"></div>
 
       <!-- פוטר סטטוס -->
@@ -53,17 +52,18 @@
 
   <!-- קונפיג (Webhook + Project) -->
   <script>
+    // חשוב: אם תחליף URL — החלף רק כאן.
     window.APP_CONFIG = {
       SHEET_API_URL: 'https://script.google.com/macros/s/AKfycbxRiJ_uMNpIJru-nNClAi787sA07hQSu7TX4cQEAm3_w3-dO2Hmp39ISxh81SqudA/exec',
       PROJECT: 'Houston'
     };
   </script>
 
-  <!-- ליבה (ולידציה + שליחה) -->
+  <!-- ליבה (ולידציה + שליחה; מחזירה שגיאות קריאות אם השרת לא JSON) -->
   <script src="../js/chat-core.js?v=3"></script>
 
   <!-- זרימת שיעור חד־פעמי -->
-  <script src="../js/flows/boost-onetime.js?v=4"></script>
+  <script src="../js/flows/boost-onetime.js?v=5"></script>
   <script>
     window.addEventListener('DOMContentLoaded', () => window.OneTimeWizard?.start?.());
   </script>
