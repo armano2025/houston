@@ -52,20 +52,32 @@
 
   <!-- קונפיג (Webhook + Project) -->
   <script>
-    // חשוב: אם תחליף URL — החלף רק כאן.
+    // ⚠️ חשוב: זה ה-URL של הדיפלוי הפעיל ששלחת. אם ישתנה – מחליפים *רק פה*.
+    // הוספתי גם console.log לזיהוי מהיר בדיבאג.
     window.APP_CONFIG = {
-      SHEET_API_URL: 'https://script.google.com/macros/s/AKfycbxRiJ_uMNpIJru-nNClAi787sA07hQSu7TX4cQEAm3_w3-dO2Hmp39ISxh81SqudA/exec',
+      SHEET_API_URL: 'https://script.google.com/macros/s/AKfycbxagWMbWh-tmxa03Z_6Z7AQK1Hgp3G8AkcBPgvj6eYLQxBm5aNMrPB7FfEEzHp0BT0H/exec',
       PROJECT: 'Houston'
     };
+    console.log('[Houston] SHEET_API_URL =', window.APP_CONFIG.SHEET_API_URL);
   </script>
 
   <!-- ליבה (ולידציה + שליחה; מחזירה שגיאות קריאות אם השרת לא JSON) -->
-  <script src="../js/chat-core.js?v=3"></script>
+  <!-- הגדלתי את פרמטר ה-v כדי לעקוף קאש בדפדפן -->
+  <script src="../js/chat-core.js?v=4"></script>
 
   <!-- זרימת שיעור חד־פעמי -->
-  <script src="../js/flows/boost-onetime.js?v=5"></script>
+  <!-- גם כאן v מעודכן כדי לאלץ ריענון קבצים סטטיים -->
+  <script src="../js/flows/boost-onetime.js?v=6"></script>
   <script>
-    window.addEventListener('DOMContentLoaded', () => window.OneTimeWizard?.start?.());
+    // הפעלה בטוחה של הוויזארד
+    window.addEventListener('DOMContentLoaded', () => {
+      try { window.OneTimeWizard?.start?.(); }
+      catch (e) {
+        console.error('OneTimeWizard start error:', e);
+        const status = document.getElementById('statusBox');
+        if (status) status.textContent = 'שגיאת טעינה – רעננו את הדף או נסו שוב בעוד רגע';
+      }
+    });
   </script>
 </body>
 </html>
