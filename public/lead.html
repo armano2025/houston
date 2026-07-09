@@ -87,7 +87,7 @@
     </section>
   </main>
 
-  <script src="/branches/js/config.js?v=5"></script>
+  <script src="/branches/js/config.js?v=6"></script>
   <script>
   // קונפיג מרכזי – ראו /branches/js/config.js
   const ENDPOINT = (window.APP_CONFIG || {}).SHEET_API_URL;
@@ -130,6 +130,7 @@
 
     // הכנת נתונים
     const data = Object.fromEntries(new FormData(form).entries());
+    data.flow = 'lead'; // זיהוי סוג הפנייה ביעד המאוחד
     data.context = collectContext(); // יישמר ב-raw
     const url = ENDPOINT + '?origin=' + encodeURIComponent(ORIGIN);
 
