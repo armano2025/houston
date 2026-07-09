@@ -6,21 +6,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>יוסטון – השארת פרטים</title>
-  <meta name="theme-color" content="#5b7cfa" />
+  <title>השארת פרטים | מרכז הלמידה בראונשטיין</title>
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="description" content="השאירו פרטים ומזכירות מרכז הלמידה בראונשטיין תחזור אליכם בהקדם." />
+  <link rel="icon" href="/assets/brand-logo.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/styles.light.css?v=2" />
+  <link rel="stylesheet" href="/styles.light.css?v=5" />
 </head>
-<body>
+<body class="has-toplogo">
+  <!-- לוגו מותג קבוע -->
+  <a class="toplogo" href="/" aria-label="בראונשטיין – דף הבית">
+    <img src="/assets/IMG_9789.jpeg" alt="לוגו בראונשטיין" loading="eager" fetchpriority="high">
+  </a>
+
   <main class="wrap">
     <section class="card">
       <header class="head">
         <div class="brand">
-          <div class="logo" aria-hidden="true">HB</div>
-          <div class="title">השארת פרטים</div>
-          <p class="subtitle">ממלאים דקה – ונחזור בהקדם</p>
+          <h1 class="title">השארת פרטים</h1>
+          <p class="subtitle">ממלאים דקה – והמזכירות תחזור אליכם בהקדם</p>
         </div>
       </header>
 
@@ -45,7 +51,7 @@
                      pattern="^0[0-9]{8,9}$"
                      title="מספר ישראלי: מתחיל ב־0 ואורך 9–10 ספרות"
                      required />
-              <div class="meta">מספר ישראלי (0 + 9–10 ספרות). נקה אוטומטית תווים לא ספרתיים.</div>
+              <div class="meta">מספר ישראלי – מתחיל ב־0, למשל 0501234567</div>
             </div>
 
             <div class="field" style="min-width:240px; flex:1">
@@ -69,17 +75,22 @@
           <input class="hp" name="website" tabindex="-1" autocomplete="off" />
 
           <div class="row" style="margin-top:8px">
-            <button id="submitBtn" class="btn primary" type="submit" aria-label="שליחת הטופס">שלח</button>
+            <button id="submitBtn" class="btn primary" type="submit" aria-label="שליחת הטופס">שליחה</button>
             <span id="msg" class="status" role="status" aria-live="polite"></span>
+          </div>
+
+          <div class="row" style="margin-top:12px">
+            <a class="btn ghost" href="/">חזרה לדף הבית</a>
           </div>
         </form>
       </div>
     </section>
   </main>
 
+  <script src="/branches/js/config.js?v=5"></script>
   <script>
-  // קונפיג
-  const ENDPOINT = 'https://script.google.com/macros/s/AKfycbxRiJ_uMNpIJru-nNClAi787sA07hQSu7TX4cQEAm3_w3-dO2Hmp39ISxh81SqudA/exec';
+  // קונפיג מרכזי – ראו /branches/js/config.js
+  const ENDPOINT = (window.APP_CONFIG || {}).SHEET_API_URL;
   const ORIGIN   = location.origin;
 
   // לכידת utm/referrer/userAgent לתוך raw (לצד השרת)
@@ -144,13 +155,13 @@
           return;
         }
       } else {
-        const err = (j && j.error) || (res.ok ? 'unknown' : ('HTTP ' + res.status));
+        console.error('[Houston] lead submit failed', { status: res.status, error: j && j.error });
         msg.className = 'status err';
-        msg.textContent = 'שגיאה: ' + err;
+        msg.textContent = 'לא הצלחנו לשלוח את הפרטים כרגע 🙁 נסו שוב בעוד רגע.';
       }
     } catch (e) {
       msg.className = 'status err';
-      msg.textContent = 'שגיאת רשת. נסה שוב.';
+      msg.textContent = 'שגיאת רשת – בדקו את החיבור לאינטרנט ונסו שוב.';
     } finally {
       btn.disabled = false;
       btn.textContent = prevTxt;

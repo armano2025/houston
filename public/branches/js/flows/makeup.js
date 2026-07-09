@@ -42,6 +42,9 @@ window.MakeupWizard = (() => {
     date: s => /^\d{4}-\d{2}-\d{2}$/.test(s),
     time: s => /^\d{2}:\d{2}$/.test(s),
   };
+  const esc = (window.Chat && window.Chat.esc) ? window.Chat.esc
+    : (s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])));
+  const FRIENDLY_ERR = 'לא הצלחנו לשלוח את הבקשה כרגע 🙁 בדקו את החיבור לאינטרנט ונסו שוב בעוד רגע.';
   const send = (payload) => (window.Chat?.sendLeadToSheet
       ? window.Chat.sendLeadToSheet(payload)
       : fetch((window.APP_CONFIG||{}).SHEET_API_URL, {
@@ -137,7 +140,7 @@ window.MakeupWizard = (() => {
     const fname = (State.data.firstName||'').trim();
     stepEl.innerHTML = `
       <div class="title-row">
-        <h3>תודה ${fname}, נמשיך לפרטי המנוי 🧑‍🚀</h3>
+        <h3>תודה ${esc(fname)}, נמשיך לפרטי המנוי 🧑‍🚀</h3>
         <div class="muted">שלב 2/8</div>
       </div>
       ${fieldRow({label:'שם פרטי תלמיד/ה',  name:'studentFirst', placeholder:'לדוגמה: נועה', required:true})}
@@ -167,10 +170,10 @@ window.MakeupWizard = (() => {
     const sname = (State.data.studentName||'תלמיד/ה');
     stepEl.innerHTML = `
       <div class="title-row">
-        <h3>תודה ${fname} 🧑‍🚀</h3>
+        <h3>תודה ${esc(fname)} 🧑‍🚀</h3>
         <div class="muted">שלב 3/8</div>
       </div>
-      <p class="muted">אני צריך עוד קצת פרטים על ${sname}:</p>
+      <p class="muted">אני צריך עוד קצת פרטים על ${esc(sname)}:</p>
       ${selectRow({label:'מקצוע', name:'subject', options:subjects, required:true})}
       ${chipsRow({label:'מסלול למידה', name:'track', options:['קבוצתי','טריפל','פרטי']})}
       <div class="wizard-actions">
@@ -198,7 +201,7 @@ window.MakeupWizard = (() => {
     State.data.studentName = `${State.data.firstName||''} ${State.data.lastName||''}`.trim();
     stepEl.innerHTML = `
       <div class="title-row">
-        <h3>בכיף ${fname}, אשמח לעזור לך לתאם שיעור השלמה 👨‍🚀</h3>
+        <h3>בכיף ${esc(fname)}, אשמח לעזור לך לתאם שיעור השלמה 👨‍🚀</h3>
         <div class="muted">שלב 2/8</div>
       </div>
       <p class="muted">נרשום כמה פרטים על השיעור ✏️</p>
@@ -405,7 +408,8 @@ window.MakeupWizard = (() => {
     ];
     stepEl.innerHTML = `
       <div class="title-row"><h3>סיכום ושליחה</h3><div class="muted">שלב 8/8</div></div>
-      <div class="summary">${rows.map(([k,v])=>`<div><strong>${k}:</strong> ${v||'-'}</div>`).join('')}</div>
+      <p class="muted">רגע לפני השליחה – כדאי לוודא שהכול נכון:</p>
+      <div class="summary">${rows.map(([k,v])=>`<div><strong>${k}:</strong> ${esc(v)||'-'}</div>`).join('')}</div>
       <div class="wizard-actions">
         <button class="btn" id="prev">חזרה</button>
         <button class="btn primary" id="send">אישור ושליחה למזכירות 📤</button>
@@ -419,20 +423,20 @@ window.MakeupWizard = (() => {
   async function submit(){
     // ולידציות אחרונות
     const d = State.data, errs=[];
-    if(!['student','parent'].includes(d.role||'')) errs.push('role');
-    if(!Val.nonEmpty(d.firstName)) errs.push('firstName');
-    if(!Val.nonEmpty(d.lastName))  errs.push('lastName');
-    if(!Val.phoneIL(d.phone))      errs.push('phone');
+    if(!['student','parent'].includes(d.role||'')) errs.push('מי ממלא');
+    if(!Val.nonEmpty(d.firstName)) errs.push('שם פרטי');
+    if(!Val.nonEmpty(d.lastName))  errs.push('שם משפחה');
+    if(!Val.phoneIL(d.phone))      errs.push('טלפון');
 
-    if(!Val.nonEmpty(d.studentName)) errs.push('studentName');
-    if(!Val.nonEmpty(d.subject))     errs.push('subject');
-    if(!Val.nonEmpty(d.grade))       errs.push('grade');
-    if(['י׳','י״א','י״ב'].includes(d.grade||'') && !Val.nonEmpty(d.units)) errs.push('units');
-    if(!Val.nonEmpty(d.teacher))     errs.push('teacher');
-    if(!Val.date(d.missedDate))      errs.push('missedDate');
-    if(!HOURS.includes(d.missedTime||'')) errs.push('missedTime');
-    if(!Val.nonEmpty(d.reason))      errs.push('reason');
-    if(errs.length) return setStatus('חסר/לא תקין: ' + errs.join(', '));
+    if(!Val.nonEmpty(d.studentName)) errs.push('שם התלמיד/ה');
+    if(!Val.nonEmpty(d.subject))     errs.push('מקצוע');
+    if(!Val.nonEmpty(d.grade))       errs.push('כיתה');
+    if(['י׳','י״א','י״ב'].includes(d.grade||'') && !Val.nonEmpty(d.units)) errs.push('יחידות');
+    if(!Val.nonEmpty(d.teacher))     errs.push('שם המורה');
+    if(!Val.date(d.missedDate))      errs.push('תאריך השיעור שהוחמץ');
+    if(!HOURS.includes(d.missedTime||'')) errs.push('שעת השיעור שהוחמץ');
+    if(!Val.nonEmpty(d.reason))      errs.push('סיבת ההחמצה');
+    if(errs.length) return setStatus('חסר או לא תקין: ' + errs.join(', '));
 
     const payload = {
       flow: 'makeup',
@@ -454,15 +458,17 @@ window.MakeupWizard = (() => {
       notes: d.notes||''
     };
 
+    const sendBtn = el('send');
     try{
-      setStatus('שולח ל־Google Sheets…');
+      if (sendBtn) sendBtn.disabled = true; // מניעת שליחה כפולה
+      setStatus('שולח למזכירות…');
       const res = await send(payload);
       if(res && res.ok){
-        setStatus('נשלח בהצלחה');
+        setStatus('');
         stepEl.innerHTML = `
-          <div class="bubble ok">הבקשה נקלטה ✅ ניצור קשר לתיאום מועד מתאים 👨‍🚀</div>
+          <div class="bubble ok">הבקשה נקלטה ✅ המזכירות תיצור קשר לתיאום מועד השלמה מתאים.</div>
           <div class="wizard-actions">
-            <button class="btn" onclick="location.href='index.html'">חזרה לתפריט מנוי/ה</button>
+            <button class="btn" onclick="location.href='index.html'">חזרה לתפריט מנויים</button>
           </div>`;
         backBtn.disabled = true;
         State.stack = [stepEl.innerHTML]; // לנעילה
@@ -470,7 +476,9 @@ window.MakeupWizard = (() => {
         throw new Error((res && res.error) || 'server_error');
       }
     }catch(err){
-      setStatus('שגיאה: ' + err.message);
+      console.error('[Houston] makeup submit failed:', err?.message || err);
+      if (sendBtn) sendBtn.disabled = false;
+      setStatus(FRIENDLY_ERR);
     }
   }
 

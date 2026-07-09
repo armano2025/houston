@@ -29,6 +29,9 @@ window.BillingWizard = (() => {
     nonEmpty: s => String(s??'').trim().length>0,
     phoneIL: s => /^0\d{1,2}\d{7}$/.test(String(s??'').replace(/\D/g,'')),
   };
+  const esc = (window.Chat && window.Chat.esc) ? window.Chat.esc
+    : (s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])));
+  const FRIENDLY_ERR = 'לא הצלחנו לשלוח את הבקשה כרגע 🙁 בדקו את החיבור לאינטרנט ונסו שוב בעוד רגע.';
   const send = (payload) => (window.Chat?.sendLeadToSheet
     ? window.Chat.sendLeadToSheet(payload)
     : fetch((window.APP_CONFIG||{}).SHEET_API_URL, {
@@ -173,8 +176,9 @@ window.BillingWizard = (() => {
         <h3>סיכום ושליחה 👨‍🚀</h3>
         <div class="muted">סיום</div>
       </div>
+      <p class="muted">רגע לפני השליחה – כדאי לוודא שהכול נכון:</p>
       <div class="summary">
-        ${rows.map(([k,v])=>`<div><strong>${k}:</strong> ${v||'-'}</div>`).join('')}
+        ${rows.map(([k,v])=>`<div><strong>${k}:</strong> ${esc(v)||'-'}</div>`).join('')}
       </div>
       <div class="wizard-actions">
         <button class="btn" id="prev">חזרה</button>
@@ -188,12 +192,12 @@ window.BillingWizard = (() => {
 
   async function submit(){
     const d = State.data, errs=[];
-    if(!Val.nonEmpty(d.role))      errs.push('role');
-    if(!Val.nonEmpty(d.firstName)) errs.push('firstName');
-    if(!Val.nonEmpty(d.lastName))  errs.push('lastName');
-    if(!Val.phoneIL(d.phone))      errs.push('phone');
-    if(!Val.nonEmpty(d.topic))     errs.push('topic');
-    if(errs.length) return setStatus('חסר/לא תקין: '+errs.join(', '));
+    if(!Val.nonEmpty(d.role))      errs.push('מי ממלא');
+    if(!Val.nonEmpty(d.firstName)) errs.push('שם פרטי');
+    if(!Val.nonEmpty(d.lastName))  errs.push('שם משפחה');
+    if(!Val.phoneIL(d.phone))      errs.push('טלפון');
+    if(!Val.nonEmpty(d.topic))     errs.push('נושא הפנייה');
+    if(errs.length) return setStatus('חסר או לא תקין: '+errs.join(', '));
 
     const payload = {
       flow: 'billing',
@@ -219,15 +223,17 @@ window.BillingWizard = (() => {
       notes: d.notes || ''
     };
 
+    const sendBtn = $('send');
     try{
-      setStatus('שולח ל־Google Sheets…');
+      if (sendBtn) sendBtn.disabled = true; // מניעת שליחה כפולה
+      setStatus('שולח למזכירות…');
       const res = await send(payload);
       if(res && res.ok){
-        setStatus('נשלח בהצלחה');
+        setStatus('');
         stepEl.innerHTML = `
-          <div class="bubble ok">הבקשה נקלטה ✅ ניצור קשר בהקדם 👨‍🚀</div>
+          <div class="bubble ok">הבקשה נקלטה ✅ המזכירות תיצור קשר בהקדם.</div>
           <div class="wizard-actions">
-            <button class="btn" onclick="location.href='index.html'">חזרה לתפריט מנוי/ה</button>
+            <button class="btn" onclick="location.href='index.html'">חזרה לתפריט מנויים</button>
           </div>`;
         backBtn && (backBtn.disabled = true);
         State.stack = [stepEl.innerHTML];
@@ -235,7 +241,9 @@ window.BillingWizard = (() => {
         throw new Error((res && res.error) || 'server_error');
       }
     }catch(err){
-      setStatus('שגיאה: ' + (err && err.message || err));
+      console.error('[Houston] billing submit failed:', err?.message || err);
+      if (sendBtn) sendBtn.disabled = false;
+      setStatus(FRIENDLY_ERR);
     }
   }
 

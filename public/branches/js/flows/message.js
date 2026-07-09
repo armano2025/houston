@@ -11,15 +11,6 @@ window.MessageWizard = (() => {
   const backBtn  = $('backBtn');
   const statusEl = $('statusBox');
 
-  // מצמיד לוגו "B" קבוע לפינה הימנית העליונה (תואם styles.light.css .logo)
-  (function ensureTopLogo(){
-    if (document.querySelector('.logo')) return;
-    const d = document.createElement('div');
-    d.className = 'logo';
-    d.setAttribute('aria-label','בראונשטיין');
-    document.body.appendChild(d);
-  })();
-
   const State = { data:{}, stack:[] };
   const setStatus = (t='') => { if(statusEl) statusEl.textContent = t; };
   const push = (fn) => { State.stack.push(fn); if(backBtn) backBtn.disabled = State.stack.length<=1; };
@@ -37,6 +28,9 @@ window.MessageWizard = (() => {
     nonEmpty: s => String(s??'').trim().length>0,
     phoneIL : s => /^0\d{1,2}\d{7}$/.test(String(s??'').replace(/\D/g,'')),
   };
+  const esc = (window.Chat && window.Chat.esc) ? window.Chat.esc
+    : (s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])));
+  const FRIENDLY_ERR = 'לא הצלחנו לשלוח את ההודעה כרגע 🙁 בדקו את החיבור לאינטרנט ונסו שוב בעוד רגע.';
   const send = (payload) => (window.Chat?.sendLeadToSheet
     ? window.Chat.sendLeadToSheet(payload)
     : fetch((window.APP_CONFIG||{}).SHEET_API_URL, {
@@ -141,8 +135,9 @@ window.MessageWizard = (() => {
         <h3>סיכום ושליחה 👨‍🚀</h3>
         <div class="muted">שלב 3/3</div>
       </div>
+      <p class="muted">רגע לפני השליחה – כדאי לוודא שהכול נכון:</p>
       <div class="summary">
-        ${rows.map(([k,v])=>`<div><strong>${k}:</strong> ${v||'-'}</div>`).join('')}
+        ${rows.map(([k,v])=>`<div><strong>${k}:</strong> ${esc(v)||'-'}</div>`).join('')}
       </div>
       <div class="wizard-actions">
         <button class="btn" id="prev">חזרה</button>
@@ -156,11 +151,11 @@ window.MessageWizard = (() => {
 
   async function submit(){
     const d = State.data, errs=[];
-    if(!Val.nonEmpty(d.role))       errs.push('role');
-    if(!Val.nonEmpty(d.firstName))  errs.push('firstName');
-    if(!Val.nonEmpty(d.lastName))   errs.push('lastName');
-    if(!Val.phoneIL(d.phone))       errs.push('phone');
-    if(errs.length) return setStatus('👨‍🚀 חסר/לא תקין: ' + errs.join(', '));
+    if(!Val.nonEmpty(d.role))       errs.push('מי ממלא');
+    if(!Val.nonEmpty(d.firstName))  errs.push('שם פרטי');
+    if(!Val.nonEmpty(d.lastName))   errs.push('שם משפחה');
+    if(!Val.phoneIL(d.phone))       errs.push('טלפון');
+    if(errs.length) return setStatus('חסר או לא תקין: ' + errs.join(', '));
 
     const payload = {
       flow: 'message',
@@ -175,15 +170,17 @@ window.MessageWizard = (() => {
       message: d.message || ''
     };
 
+    const sendBtn = $('send');
     try{
-      setStatus('👨‍🚀 שולח…');
+      if (sendBtn) sendBtn.disabled = true; // מניעת שליחה כפולה
+      setStatus('שולח למזכירות…');
       const res = await send(payload);
       if(res && res.ok){
-        setStatus('נשלח בהצלחה');
+        setStatus('');
         stepEl.innerHTML = `
-          <div class="bubble ok">ההודעה נקלטה ✅ נחזור אליכם בהקדם 👨‍🚀</div>
+          <div class="bubble ok">ההודעה נקלטה ✅ המזכירות תחזור אליכם בהקדם.</div>
           <div class="wizard-actions">
-            <button class="btn primary" onclick="location.href='index.html'">לתפריט מנויים</button>
+            <button class="btn primary" onclick="location.href='index.html'">חזרה לתפריט מנויים</button>
           </div>`;
         if(backBtn) backBtn.disabled = true;
         State.stack = [stepEl.innerHTML];
@@ -191,7 +188,9 @@ window.MessageWizard = (() => {
         throw new Error((res && res.error) || 'server_error');
       }
     }catch(err){
-      setStatus('שגיאה: ' + (err?.message || err));
+      console.error('[Houston] message submit failed:', err?.message || err);
+      if (sendBtn) sendBtn.disabled = false;
+      setStatus(FRIENDLY_ERR);
     }
   }
 

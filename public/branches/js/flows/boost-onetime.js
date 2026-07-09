@@ -34,6 +34,9 @@ window.OneTimeWizard = (() => {
     phoneIL: s => /^0\d{1,2}\d{7}$/.test(String(s??'').replace(/[^\d]/g,'')),
     date: s => /^\d{4}-\d{2}-\d{2}$/.test(s),
   };
+  const esc = (window.Chat && window.Chat.esc) ? window.Chat.esc
+    : (s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])));
+  const FRIENDLY_ERR = 'לא הצלחנו לשלוח את הבקשה כרגע 🙁 בדקו את החיבור לאינטרנט ונסו שוב בעוד רגע.';
 
   // שליחה ל־GAS: text/plain (בלי preflight) + תמיכה בתשובות טקסט/JSON
   async function send(payload){
@@ -350,7 +353,8 @@ window.OneTimeWizard = (() => {
 
     stepEl.innerHTML = `
       <div class="title-row"><h3>סיכום ושליחה 👨‍🚀</h3><div class="muted">שלב 7/7</div></div>
-      <div class="summary">${rows.map(([k,v])=>`<div><strong>${k}:</strong> ${v||'-'}</div>`).join('')}</div>
+      <p class="muted">רגע לפני השליחה – כדאי לוודא שהכול נכון:</p>
+      <div class="summary">${rows.map(([k,v])=>`<div><strong>${k}:</strong> ${esc(v)||'-'}</div>`).join('')}</div>
       <div class="wizard-actions">
         <button class="btn" id="prev">חזרה</button>
         <button class="btn primary" id="send">אישור ושליחה למזכירות 📤</button>
@@ -363,27 +367,27 @@ window.OneTimeWizard = (() => {
 
   async function submit(){
     const d = State.data, errs=[];
-    if(!Val.nonEmpty(d.role))       errs.push('role');
-    if(!Val.nonEmpty(d.firstName))  errs.push('firstName');
-    if(!Val.nonEmpty(d.lastName))   errs.push('lastName');
-    if(!Val.phoneIL(d.phone))       errs.push('phone');
+    if(!Val.nonEmpty(d.role))       errs.push('מי ממלא');
+    if(!Val.nonEmpty(d.firstName))  errs.push('שם פרטי');
+    if(!Val.nonEmpty(d.lastName))   errs.push('שם משפחה');
+    if(!Val.phoneIL(d.phone))       errs.push('טלפון');
 
     if(d.role==='הורה'){
-      if(!Val.nonEmpty(d.studentFirst)) errs.push('studentFirst');
-      if(!Val.nonEmpty(d.studentLast))  errs.push('studentLast');
+      if(!Val.nonEmpty(d.studentFirst)) errs.push('שם פרטי התלמיד/ה');
+      if(!Val.nonEmpty(d.studentLast))  errs.push('שם משפחה התלמיד/ה');
     }
 
-    if(!Val.nonEmpty(d.subject))   errs.push('subject');
-    if(!Val.nonEmpty(d.grade))     errs.push('grade');
-    if(['י׳','י״א','י״ב'].includes(d.grade||'') && !Val.nonEmpty(d.units)) errs.push('units');
+    if(!Val.nonEmpty(d.subject))   errs.push('מקצוע');
+    if(!Val.nonEmpty(d.grade))     errs.push('כיתה');
+    if(['י׳','י״א','י״ב'].includes(d.grade||'') && !Val.nonEmpty(d.units)) errs.push('יחידות');
 
-    if(!Val.nonEmpty(d.track))     errs.push('track');
-    if(!Val.nonEmpty(d.rate))      errs.push('rate');
-    if(!Val.nonEmpty(d.teacherPreference)) errs.push('teacherPreference');
+    if(!Val.nonEmpty(d.track))     errs.push('מסלול');
+    if(!Val.nonEmpty(d.rate))      errs.push('תעריף');
+    if(!Val.nonEmpty(d.teacherPreference)) errs.push('מורה מועדף');
 
-    if(!Array.isArray(d.slots) || !d.slots.length) errs.push('slots');
+    if(!Array.isArray(d.slots) || !d.slots.length) errs.push('מועדים');
 
-    if(errs.length) return setStatus('חסר/לא תקין: ' + errs.join(', '));
+    if(errs.length) return setStatus('חסר או לא תקין: ' + errs.join(', '));
 
     // לשליחה ל-GAS: שמות שדות תואמים במדויק ל-INTAKE_HEADERS.onetime
     const first = d.slots[0];
@@ -416,16 +420,18 @@ window.OneTimeWizard = (() => {
       notes: d.notes || ''
     };
 
+    const sendBtn = el('send');
     try{
-      setStatus('שולח ל־Google Sheets…');
+      if (sendBtn) sendBtn.disabled = true; // מניעת שליחה כפולה
+      setStatus('שולח למזכירות…');
       const res = await send(payload);
       if(res && res.ok){
-        setStatus('נשלח בהצלחה');
+        setStatus('');
         const fname = (d.firstName||'').trim() || '🙂';
         stepEl.innerHTML = `
-          <div class="bubble ok">תודה ${fname} ✅ הבקשה לשיעור חד־פעמי נקלטה. נחזור לתאם בהקדם 👨‍🚀</div>
+          <div class="bubble ok">תודה ${esc(fname)} ✅ הבקשה לשיעור חד־פעמי נקלטה. המזכירות תחזור אליכם לתיאום בהקדם.</div>
           <div class="wizard-actions">
-            <button class="btn" onclick="location.href='../../index.html'">חזרה לתפריט</button>
+            <button class="btn" onclick="location.href='../../index.html'">חזרה לתפריט הראשי</button>
           </div>`;
         backBtn.disabled = true;
         State.stack = [stepEl.innerHTML];
@@ -433,7 +439,9 @@ window.OneTimeWizard = (() => {
         throw new Error(res && res.raw ? res.raw : 'server_error');
       }
     }catch(err){
-      setStatus('שגיאה: ' + err.message);
+      console.error('[Houston] onetime submit failed:', err?.message || err);
+      if (sendBtn) sendBtn.disabled = false;
+      setStatus(FRIENDLY_ERR);
     }
   }
 

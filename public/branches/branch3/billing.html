@@ -7,14 +7,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>יוסטון 👨‍🚀 – Billing (חיוב/חשבוניות)</title>
-  <meta name="theme-color" content="#5b7cfa" />
+  <title>יוסטון – תשלומים וחשבוניות | מרכז הלמידה בראונשטיין</title>
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="description" content="עדכון אמצעי תשלום, חשבוניות ובירורי חיוב למנויי מרכז הלמידה בראונשטיין." />
+  <link rel="icon" href="../../assets/brand-logo.svg" type="image/svg+xml" />
 
   <!-- פונט ועיצוב גלובלי -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="../../styles.light.css?v=4" />
+  <link rel="stylesheet" href="../../styles.light.css?v=5" />
 </head>
 <body class="has-toplogo">
   <!-- לוגו מותג קבוע (קובץ: /public/assets/IMG_9789.jpeg) -->
@@ -37,9 +39,9 @@
 
       <!-- כותרת -->
       <header class="head">
-        <div class="brand" aria-label="Billing – חיוב/חשבוניות">
-          <h1 class="title">Billing – חיוב/חשבוניות</h1>
-          <p class="subtitle"> 👨‍🚀 נרשום כמה פרטים ונעביר למזכירות</p>
+        <div class="brand" aria-label="תשלומים וחשבוניות">
+          <h1 class="title">תשלומים וחשבוניות</h1>
+          <p class="subtitle">נרשום כמה פרטים קצרים ונעביר למזכירות 👨‍🚀</p>
         </div>
       </header>
 
@@ -53,19 +55,14 @@
     </section>
   </main>
 
-  <!-- קונפיג ל־Webhook + Project -->
-  <script>
-    window.APP_CONFIG = {
-      SHEET_API_URL: 'https://script.google.com/macros/s/AKfycbxRiJ_uMNpIJru-nNClAi787sA07hQSu7TX4cQEAm3_w3-dO2Hmp39ISxh81SqudA/exec',
-      PROJECT: 'Houston'
-    };
-  </script>
+  <!-- קונפיג מרכזי (Webhook + Project) -->
+  <script src="../js/config.js?v=5"></script>
 
   <!-- ליבת עזר: ולידציות + שליחה (שומר על IDs: backBtn, step, statusBox) -->
-  <script src="../js/chat-core.js?v=3"></script>
+  <script src="../js/chat-core.js?v=5"></script>
 
   <!-- הזרימה עצמה -->
-  <script src="../js/flows/billing.js?v=1"></script>
+  <script src="../js/flows/billing.js?v=5"></script>
   <script>
     window.addEventListener('DOMContentLoaded', () => window.BillingWizard?.start?.());
   </script>

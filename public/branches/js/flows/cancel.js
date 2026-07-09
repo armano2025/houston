@@ -34,6 +34,9 @@ window.CancelWizard = (() => {
     phoneIL: s => /^0\d{1,2}\d{7}$/.test(String(s??'').replace(/[^\d]/g,'')),
     date: s => /^\d{4}-\d{2}-\d{2}$/.test(s),
   };
+  const esc = (window.Chat && window.Chat.esc) ? window.Chat.esc
+    : (s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])));
+  const FRIENDLY_ERR = 'לא הצלחנו לשלוח את הבקשה כרגע 🙁 בדקו את החיבור לאינטרנט ונסו שוב בעוד רגע.';
   const send = (payload) => (window.Chat?.sendLeadToSheet
     ? window.Chat.sendLeadToSheet(payload)
     : fetch((window.APP_CONFIG||{}).SHEET_API_URL, {
@@ -181,7 +184,7 @@ window.CancelWizard = (() => {
 
     stepEl.innerHTML = `
       <div class="title-row"><h3>סיבת הביטול 👨‍🚀</h3><div class="muted">שלב 3/6</div></div>
-      <p class="meta">תודה ${State.data.firstName||''}, אשמח לדעת מהי סיבת הביטול 👨‍🚀</p>
+      <p class="meta">תודה ${esc(State.data.firstName||'')}, אשמח לדעת מהי סיבת הביטול 👨‍🚀</p>
       ${chipsRow({label:'בחר/י סיבות (אפשר כמה)', name:'reasons', options:REASONS, multi:true})}
       <div class="field hidden" id="otherWrap">
         <label for="f_reasonOther">פירוט (רשות)</label>
@@ -283,7 +286,8 @@ window.CancelWizard = (() => {
     ];
     stepEl.innerHTML = `
       <div class="title-row"><h3>סיכום ושליחה 👨‍🚀</h3><div class="muted">שלב 6/6</div></div>
-      <div class="summary">${rows.map(([k,v])=>`<div><strong>${k}:</strong> ${v||'-'}</div>`).join('')}</div>
+      <p class="muted">רגע לפני השליחה – כדאי לוודא שהכול נכון:</p>
+      <div class="summary">${rows.map(([k,v])=>`<div><strong>${k}:</strong> ${esc(v)||'-'}</div>`).join('')}</div>
       <div class="wizard-actions">
         <button class="btn" id="prev">חזרה</button>
         <button class="btn primary" id="send">אישור ושליחה למזכירות 📤</button>
@@ -298,17 +302,17 @@ window.CancelWizard = (() => {
     const d = State.data, errs=[];
 
     // ולידציות אחרונות
-    if(!Val.nonEmpty(d.role))       errs.push('role');
-    if(!Val.nonEmpty(d.firstName))  errs.push('firstName');
-    if(!Val.nonEmpty(d.lastName))   errs.push('lastName');
-    if(!Val.phoneIL(d.phone))       errs.push('phone');
-    if(!Val.nonEmpty(d.studentFirst)) errs.push('studentFirst'); // תלמיד = שוכפל מההורה/תלמיד
-    if(!Val.nonEmpty(d.studentLast))  errs.push('studentLast');
-    if(!Val.nonEmpty(d.subject))    errs.push('subject');
-    if(!Array.isArray(d.reasons) || d.reasons.length===0) errs.push('reasons');
-    if(d.effective !== 'מיידי' && !Val.date(d.effectiveDate)) errs.push('effectiveDate');
+    if(!Val.nonEmpty(d.role))       errs.push('מי ממלא');
+    if(!Val.nonEmpty(d.firstName))  errs.push('שם פרטי');
+    if(!Val.nonEmpty(d.lastName))   errs.push('שם משפחה');
+    if(!Val.phoneIL(d.phone))       errs.push('טלפון');
+    if(!Val.nonEmpty(d.studentFirst)) errs.push('שם פרטי התלמיד/ה'); // תלמיד = שוכפל מההורה/תלמיד
+    if(!Val.nonEmpty(d.studentLast))  errs.push('שם משפחה התלמיד/ה');
+    if(!Val.nonEmpty(d.subject))    errs.push('מקצוע');
+    if(!Array.isArray(d.reasons) || d.reasons.length===0) errs.push('סיבת הביטול');
+    if(d.effective !== 'מיידי' && !Val.date(d.effectiveDate)) errs.push('תאריך יעד');
 
-    if(errs.length) return setStatus('חסר/לא תקין: ' + errs.join(', '));
+    if(errs.length) return setStatus('חסר או לא תקין: ' + errs.join(', '));
 
     const payload = {
       flow: 'cancel',
@@ -329,15 +333,17 @@ window.CancelWizard = (() => {
       notes: d.notes||''
     };
 
+    const sendBtn = el('send');
     try{
-      setStatus('שולח ל־Google Sheets…');
+      if (sendBtn) sendBtn.disabled = true; // מניעת שליחה כפולה
+      setStatus('שולח למזכירות…');
       const res = await send(payload);
       if(res && res.ok){
-        setStatus('נשלח בהצלחה');
+        setStatus('');
         stepEl.innerHTML = `
-          <div class="bubble ok">הבקשה נקלטה ✅ ניצור קשר להמשך 👨‍🚀</div>
+          <div class="bubble ok">הבקשה נקלטה ✅ המזכירות תיצור קשר להמשך הטיפול.</div>
           <div class="wizard-actions">
-            <button class="btn" onclick="location.href='index.html'">חזרה לתפריט מנוי/ה</button>
+            <button class="btn" onclick="location.href='index.html'">חזרה לתפריט מנויים</button>
           </div>`;
         backBtn.disabled = true;
         State.stack = [stepEl.innerHTML]; // נעילה
@@ -345,7 +351,9 @@ window.CancelWizard = (() => {
         throw new Error((res && res.error) || 'server_error');
       }
     }catch(err){
-      setStatus('שגיאה: ' + err.message);
+      console.error('[Houston] cancel submit failed:', err?.message || err);
+      if (sendBtn) sendBtn.disabled = false;
+      setStatus(FRIENDLY_ERR);
     }
   }
 

@@ -5,15 +5,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>יוסטון 👨‍🚀 – הודעה למזכירות</title>
-  <meta name="theme-color" content="#5b7cfa" />
+  <title>יוסטון – הודעה למזכירות | מרכז הלמידה בראונשטיין</title>
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="description" content="שליחת הודעה למזכירות מרכז הלמידה בראונשטיין." />
+  <link rel="icon" href="../../assets/brand-logo.svg" type="image/svg+xml" />
 
   <!-- פונט ועיצוב גלובלי -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap" rel="stylesheet" />
-  <!-- גרסת העיצוב המאוחדת שמסתירה לוגו ישן (.logo) -->
-  <link rel="stylesheet" href="../../styles.light.css?v=4.1" />
+  <link rel="stylesheet" href="../../styles.light.css?v=5" />
 </head>
 <body class="has-toplogo">
   <!-- לוגו מותג קבוע (קובץ: /public/assets/IMG_9789.jpeg) -->
@@ -52,19 +53,14 @@
     </section>
   </main>
 
-  <!-- קונפיג (Webhook + Project) -->
-  <script>
-    window.APP_CONFIG = {
-      SHEET_API_URL: 'https://script.google.com/macros/s/AKfycbxRiJ_uMNpIJru-nNClAi787sA07hQSu7TX4cQEAm3_w3-dO2Hmp39ISxh81SqudA/exec',
-      PROJECT: 'Houston'
-    };
-  </script>
+  <!-- קונפיג מרכזי (Webhook + Project) -->
+  <script src="../js/config.js?v=5"></script>
 
   <!-- ליבה (ולידציה + שליחה) -->
-  <script src="../js/chat-core.js?v=3"></script>
+  <script src="../js/chat-core.js?v=5"></script>
 
   <!-- זרימת הודעה למזכירות -->
-  <script src="../js/flows/message.js?v=1"></script>
+  <script src="../js/flows/message.js?v=5"></script>
   <script>
     window.addEventListener('DOMContentLoaded', () => window.MessageWizard?.start?.());
   </script>

@@ -1,12 +1,12 @@
-<!-- /thanks.html
-     עמוד תודה: מציג את מספר התיק (caseId) מה-URL, באותו עיצוב גלובלי, עם כפתור חזרה. -->
+<!-- /public/404.html – עמוד "לא נמצא" ידידותי -->
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>תודה! | מרכז הלמידה בראונשטיין</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>הדף לא נמצא | מרכז הלמידה בראונשטיין</title>
   <meta name="theme-color" content="#2563eb" />
+  <meta name="robots" content="noindex" />
   <link rel="icon" href="/assets/brand-logo.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -14,7 +14,6 @@
   <link rel="stylesheet" href="/styles.light.css?v=5" />
 </head>
 <body class="has-toplogo">
-  <!-- לוגו מותג קבוע -->
   <a class="toplogo" href="/" aria-label="בראונשטיין – דף הבית">
     <img src="/assets/IMG_9789.jpeg" alt="לוגו בראונשטיין" loading="eager" fetchpriority="high">
   </a>
@@ -23,30 +22,20 @@
     <section class="card">
       <header class="head">
         <div class="brand">
-          <h1 class="title">תודה! קיבלנו את הפרטים</h1>
-          <p class="subtitle">המזכירות תחזור אליכם בהקדם</p>
+          <h1 class="title">אופס… הדף הזה לא נמצא 👨‍🚀</h1>
+          <p class="subtitle">ייתכן שהקישור ישן או שגוי</p>
         </div>
       </header>
-
       <div class="body">
         <div class="bubble bot">
-          מספר התיק שלך:
+          אל דאגה – יוסטון כאן. אפשר לחזור לדף הבית ולהמשיך משם.
         </div>
-        <div class="bubble user">
-          <span id="caseBadge" class="badge">—</span>
-        </div>
-
-        <div class="row" style="margin-top:8px">
-          <a class="btn" href="/">חזרה לדף הבית</a>
+        <div class="row" style="margin-top:12px">
+          <a class="btn primary" href="/">חזרה לדף הבית</a>
+          <a class="btn ghost" href="/branches/branch3/index.html">תפריט מנויים</a>
         </div>
       </div>
     </section>
   </main>
-
-  <script>
-    const p = new URLSearchParams(location.search);
-    const id = p.get('caseId');
-    document.getElementById('caseBadge').textContent = id ? ('#' + id) : 'לא ידוע';
-  </script>
 </body>
 </html>
