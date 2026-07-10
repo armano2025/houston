@@ -101,6 +101,9 @@ window.InfoPage = (() => {
       const subjects  = getSubjects();
       const interests = getInterests();
 
+      const sendBtn = el('sendBtn');
+      if (sendBtn) sendBtn.disabled = true; // מניעת שליחה כפולה
+
       // פותחים את ה-WordPress מיד (מחווה של המשתמש) כדי לא להיחסם באייפון
       safeOpenNewTab(WP_URL);
 
@@ -119,7 +122,7 @@ window.InfoPage = (() => {
       try{
         const res = await sendToSheet(payload);
         if (res && res.ok){
-          setStatus('נשלח בהצלחה ✅','ok');
+          setStatus('הפרטים נשלחו בהצלחה ✅ נחזור אליכם בהקדם', 'ok');
           // ניקוי טופס קל
           form().reset();
           // כיבוי צ'יפים
@@ -132,7 +135,10 @@ window.InfoPage = (() => {
           throw new Error(res && res.raw ? res.raw : 'server_error');
         }
       } catch(err){
-        setStatus('שגיאה בשליחה: ' + err.message, 'err');
+        console.error('[Houston] info submit failed:', err?.message || err);
+        setStatus('לא הצלחנו לשלוח את הפרטים כרגע 🙁 בדקו את החיבור לאינטרנט ונסו שוב בעוד רגע.', 'err');
+      } finally {
+        if (sendBtn) sendBtn.disabled = false;
       }
     }, { passive:false });
   }

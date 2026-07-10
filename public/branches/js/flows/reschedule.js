@@ -43,6 +43,9 @@ window.RescheduleWizard = (() => {
     date: s => /^\d{4}-\d{2}-\d{2}$/.test(s),
     time: s => /^\d{2}:\d{2}$/.test(s),
   };
+  const esc = (window.Chat && window.Chat.esc) ? window.Chat.esc
+    : (s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])));
+  const FRIENDLY_ERR = 'לא הצלחנו לשלוח את הבקשה כרגע 🙁 בדקו את החיבור לאינטרנט ונסו שוב בעוד רגע.';
   const send = (payload) => (window.Chat?.sendLeadToSheet
       ? window.Chat.sendLeadToSheet(payload)
       : fetch((window.APP_CONFIG||{}).SHEET_API_URL, {
@@ -184,7 +187,7 @@ window.RescheduleWizard = (() => {
         <h3>מורה 👨‍🚀</h3>
         <div class="muted">שלב 3/7</div>
       </div>
-      <p class="muted">תודה ${fname}, עכשיו אני צריך לדעת מי המורה של ${studentLabel} 👨‍🚀</p>
+      <p class="muted">תודה ${esc(fname)}, עכשיו אני צריך לדעת מי המורה של ${esc(studentLabel)} 👨‍🚀</p>
       ${fieldRow({label:'שם המורה במרכז הלמידה', name:'teacher', placeholder:'לדוגמה: לירז', required:true})}
       <div class="wizard-actions">
         <button class="btn" id="prev">חזרה</button>
@@ -241,7 +244,7 @@ window.RescheduleWizard = (() => {
         <h3>תיאום מועד חדש 👨‍🚀</h3>
         <div class="muted">שלב 5/7</div>
       </div>
-      <p class="muted">תודה ${fname}, אעביר אל המזכירות את כל הזמנים שנוחים לך. כדאי לבחור כמה שיותר אפשרויות 👨‍🚀</p>
+      <p class="muted">תודה ${esc(fname)}, אעביר אל המזכירות את כל הזמנים שנוחים לך. כדאי לבחור כמה שיותר אפשרויות 👨‍🚀</p>
       ${selectRow({label:'יום בשבוע', name:'slotDay', options:DAYS, required:false})}
       <div class="field">
         <label for="f_slotRange">טווח שעות</label>
@@ -318,7 +321,7 @@ window.RescheduleWizard = (() => {
         <h3>הערות למזכירות 👨‍🚀</h3>
         <div class="muted">שלב 6/7</div>
       </div>
-      <p class="muted">${fname}, לפני שאשלח למזכירות, יש עוד משהו שצריך להוסיף 👨‍🚀?</p>
+      <p class="muted">${esc(fname)}, לפני שאשלח למזכירות, יש עוד משהו שצריך להוסיף 👨‍🚀?</p>
       <div class="field">
         <label for="f_notes">הערות (רשות)</label>
         <textarea id="f_notes" rows="3" placeholder="העדפות, אילוצים, פרטים שיעזרו לנו"></textarea>
@@ -355,7 +358,8 @@ window.RescheduleWizard = (() => {
         <h3>סיכום ושליחה 👨‍🚀</h3>
         <div class="muted">שלב 7/7</div>
       </div>
-      <div class="summary">${rows.map(([k,v])=>`<div><strong>${k}:</strong> ${v||'-'}</div>`).join('')}</div>
+      <p class="muted">רגע לפני השליחה – כדאי לוודא שהכול נכון:</p>
+      <div class="summary">${rows.map(([k,v])=>`<div><strong>${k}:</strong> ${esc(v)||'-'}</div>`).join('')}</div>
       <div class="wizard-actions">
         <button class="btn" id="prev">חזרה</button>
         <button class="btn primary" id="send">אישור ושליחה למזכירות 📤</button>
@@ -369,16 +373,16 @@ window.RescheduleWizard = (() => {
   // שליחה
   async function submit(){
     const d = State.data, errs=[];
-    if(!Val.nonEmpty(d.role))       errs.push('role');
-    if(!Val.nonEmpty(d.firstName))  errs.push('firstName');
-    if(!Val.nonEmpty(d.lastName))   errs.push('lastName');
-    if(!Val.phoneIL(d.phone))       errs.push('phone');
-    if(d.role==='הורה' && !Val.nonEmpty(d.studentName)) errs.push('studentName');
-    if(!Val.nonEmpty(d.subject))    errs.push('subject');
-    if(!Val.nonEmpty(d.teacher))    errs.push('teacher');
-    if(!Val.nonEmpty(d.currentDay)) errs.push('currentDay');
-    if(!HOURS.includes(d.currentTime||'')) errs.push('currentTime');
-    if(errs.length) return setStatus('חסר/לא תקין: ' + errs.join(', '));
+    if(!Val.nonEmpty(d.role))       errs.push('מי ממלא');
+    if(!Val.nonEmpty(d.firstName))  errs.push('שם פרטי');
+    if(!Val.nonEmpty(d.lastName))   errs.push('שם משפחה');
+    if(!Val.phoneIL(d.phone))       errs.push('טלפון');
+    if(d.role==='הורה' && !Val.nonEmpty(d.studentName)) errs.push('שם התלמיד/ה');
+    if(!Val.nonEmpty(d.subject))    errs.push('מקצוע');
+    if(!Val.nonEmpty(d.teacher))    errs.push('שם המורה');
+    if(!Val.nonEmpty(d.currentDay)) errs.push('היום הקבוע');
+    if(!HOURS.includes(d.currentTime||'')) errs.push('השעה הקבועה');
+    if(errs.length) return setStatus('חסר או לא תקין: ' + errs.join(', '));
 
     const payload = {
       flow: 'reschedule',
@@ -411,15 +415,17 @@ window.RescheduleWizard = (() => {
       notes: d.notes || ''
     };
 
+    const sendBtn = el('send');
     try{
-      setStatus('שולח ל־Google Sheets…');
+      if (sendBtn) sendBtn.disabled = true; // מניעת שליחה כפולה
+      setStatus('שולח למזכירות…');
       const res = await send(payload);
       if(res && res.ok){
-        setStatus('נשלח בהצלחה');
+        setStatus('');
         stepEl.innerHTML = `
-          <div class="bubble ok">הבקשה נקלטה ✅ ניצור קשר לתיאום מועד חדש 👨‍🚀</div>
+          <div class="bubble ok">הבקשה נקלטה ✅ המזכירות תיצור קשר לתיאום המועד החדש.</div>
           <div class="wizard-actions">
-            <button class="btn" onclick="location.href='index.html'">חזרה לתפריט מנוי/ה</button>
+            <button class="btn" onclick="location.href='index.html'">חזרה לתפריט מנויים</button>
           </div>`;
         backBtn.disabled = true;
         State.stack = [stepEl.innerHTML];
@@ -427,7 +433,9 @@ window.RescheduleWizard = (() => {
         throw new Error((res && res.error) || 'server_error');
       }
     }catch(err){
-      setStatus('שגיאה: ' + err.message);
+      console.error('[Houston] reschedule submit failed:', err?.message || err);
+      if (sendBtn) sendBtn.disabled = false;
+      setStatus(FRIENDLY_ERR);
     }
   }
 

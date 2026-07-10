@@ -5,22 +5,24 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>יוסטון 👨‍🚀 – תפריט מנוי קיים</title>
-  <meta name="theme-color" content="#5b7cfa" />
+  <title>יוסטון – תפריט מנויים | מרכז הלמידה בראונשטיין</title>
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="description" content="פעולות למנויי מרכז הלמידה בראונשטיין: השלמת שיעור, שינוי מועד, תגבור, תשלומים והודעות." />
+  <link rel="icon" href="../../assets/brand-logo.svg" type="image/svg+xml" />
 
   <!-- פונט ועיצוב גלובלי -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="../../styles.light.css?v=4.1" />
+  <link rel="stylesheet" href="../../styles.light.css?v=5" />
 
   <!-- Prefetch למסכים הפנימיים -->
-  <link rel="prefetch" href="./makeup.html?v=page1" as="document" />
-  <link rel="prefetch" href="./reschedule.html" as="document" />
-  <link rel="prefetch" href="./billing.html" as="document" />
-  <link rel="prefetch" href="./message.html" as="document" />
-  <link rel="prefetch" href="./cancel.html" as="document" />
-  <link rel="prefetch" href="../branch1/boost.html" as="document" />
+  <link rel="prefetch" href="./makeup.html" />
+  <link rel="prefetch" href="./reschedule.html" />
+  <link rel="prefetch" href="./billing.html" />
+  <link rel="prefetch" href="./message.html" />
+  <link rel="prefetch" href="./cancel.html" />
+  <link rel="prefetch" href="../branch1/boost.html" />
 
   <!-- מיקרו-סגנון -->
   <style>
@@ -65,7 +67,7 @@
             <button class="btn ghost" onclick="location.href='../../index.html'">לתפריט ראשי</button>
           </div>
           <div class="left">
-            <a class="btn ghost" href="../../faq.html" target="_blank" rel="noopener">יש לי שאלות</a>
+            <a class="btn ghost" href="./message.html">יש לי שאלה</a>
           </div>
         </div>
 
@@ -89,7 +91,7 @@
 
           <div class="group-card">
             <nav class="grid" aria-label="ניהול שיעורים">
-              <a class="tile" href="./makeup.html?v=page1" aria-label="השלמת שיעור" data-action="השלמת שיעור">
+              <a class="tile" href="./makeup.html" aria-label="השלמת שיעור" data-action="השלמת שיעור">
                 <h3>📅 השלמת שיעור</h3>
                 <p>דיווח על החמצה ובחירת מועד השלמה</p>
               </a>
@@ -134,14 +136,10 @@
           </div>
         </div>
 
-        <!-- טיפ חדש -->
-        <p class="meta muted" style="margin-top:10px">
-          
-        </p>
       </div>
 
       <div class="footerbar" aria-hidden="true">
-        <span class="meta muted">יוסטון 👨‍🚀</span>
+        <span class="meta muted">יוסטון 👨‍🚀 · מרכז הלמידה בראונשטיין</span>
       </div>
     </section>
   </main>
@@ -165,8 +163,18 @@
         const raw = localStorage.getItem(KEY);
         if (raw){
           const {label, href} = JSON.parse(raw);
-          container.innerHTML = `המשכת לאחרונה: <a href="${href}" class="badge" aria-label="להמשיך אל ${label}">${label}</a>`;
-          container.style.display = '';
+          // בנייה בטוחה (textContent) – בלי להזריק HTML מ-localStorage
+          const allowed = ['./makeup.html','./reschedule.html','../branch1/boost.html','./billing.html','./message.html','./cancel.html'];
+          if (allowed.includes(href)){
+            container.textContent = 'המשכת לאחרונה: ';
+            const a = document.createElement('a');
+            a.href = href;
+            a.className = 'badge';
+            a.textContent = String(label || '').slice(0, 40);
+            a.setAttribute('aria-label', 'להמשיך אל ' + a.textContent);
+            container.appendChild(a);
+            container.style.display = '';
+          }
         }
       }catch(e){}
     })();

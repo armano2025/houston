@@ -5,14 +5,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>יוסטון 👨‍🚀 – שיעור חד־פעמי</title>
-  <meta name="theme-color" content="#5b7cfa" />
+  <title>יוסטון – שיעור חד־פעמי | מרכז הלמידה בראונשטיין</title>
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="description" content="בקשת שיעור חד־פעמי על בסיס מקום פנוי במרכז הלמידה בראונשטיין." />
+  <link rel="icon" href="../../assets/brand-logo.svg" type="image/svg+xml" />
 
   <!-- פונט ועיצוב גלובלי -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="../../styles.light.css?v=4.1" />
+  <link rel="stylesheet" href="../../styles.light.css?v=5" />
 </head>
 <body class="has-toplogo">
   <!-- לוגו מותג קבוע -->
@@ -50,24 +52,14 @@
     </section>
   </main>
 
-  <!-- קונפיג (Webhook + Project) -->
-  <script>
-    // ⚠️ חשוב: זה ה-URL של הדיפלוי הפעיל ששלחת. אם ישתנה – מחליפים *רק פה*.
-    // הוספתי גם console.log לזיהוי מהיר בדיבאג.
-    window.APP_CONFIG = {
-      SHEET_API_URL: 'https://script.google.com/macros/s/AKfycbxagWMbWh-tmxa03Z_6Z7AQK1Hgp3G8AkcBPgvj6eYLQxBm5aNMrPB7FfEEzHp0BT0H/exec',
-      PROJECT: 'Houston'
-    };
-    console.log('[Houston] SHEET_API_URL =', window.APP_CONFIG.SHEET_API_URL);
-  </script>
+  <!-- קונפיג מרכזי (Webhook + Project); זרימה זו משתמשת בדיפלוי onetime -->
+  <script src="../js/config.js?v=6" data-endpoint="onetime"></script>
 
-  <!-- ליבה (ולידציה + שליחה; מחזירה שגיאות קריאות אם השרת לא JSON) -->
-  <!-- הגדלתי את פרמטר ה-v כדי לעקוף קאש בדפדפן -->
-  <script src="../js/chat-core.js?v=4"></script>
+  <!-- ליבה (ולידציה + שליחה) -->
+  <script src="../js/chat-core.js?v=5"></script>
 
   <!-- זרימת שיעור חד־פעמי -->
-  <!-- גם כאן v מעודכן כדי לאלץ ריענון קבצים סטטיים -->
-  <script src="../js/flows/boost-onetime.js?v=6"></script>
+  <script src="../js/flows/boost-onetime.js?v=7"></script>
   <script>
     // הפעלה בטוחה של הוויזארד
     window.addEventListener('DOMContentLoaded', () => {

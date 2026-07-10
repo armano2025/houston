@@ -7,12 +7,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>מרכז הלמידה בראונשטיין 👨‍🚀 – מידע והרשמה</title>
-  <meta name="theme-color" content="#5b7cfa" />
+  <title>מרכז הלמידה בראונשטיין – מידע והרשמה</title>
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="description" content="מרכז הלמידה בראונשטיין – מסלולי מנוי חודשי, הכנה לבגרויות והשלמת פערים. השאירו פרטים ונחזור אליכם." />
+  <link rel="icon" href="../../assets/brand-logo.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="../../styles.light.css?v=3" />
+  <link rel="stylesheet" href="../../styles.light.css?v=5" />
   <style>
     /* תוספות קלות לעיצוב הנחיתה */
     .hero{
@@ -48,7 +50,7 @@
           <button class="btn ghost" onclick="location.href='../../index.html'">לתפריט ראשי</button>
         </div>
         <div class="left" style="display:flex; gap:8px; align-items:center">
-          <a class="btn ghost" href="../../faq.html" target="_blank" rel="noopener">יש לי שאלות</a>
+          <a class="btn ghost" href="#lead">יש לי שאלות</a>
         </div>
       </div>
 
@@ -87,13 +89,13 @@
       <section class="section body" id="lead">
         <div class="bubble bot">
           <strong>ספרו לנו קצת עליכם 👨‍🚀</strong><br/>
-          <span class="meta"> 👨‍🚀 טופס קצרצר – ושולחים למזכירות</span>
+          <span class="meta">טופס של דקה – והמזכירות תחזור אליכם בהקדם</span>
         </div>
 
         <form id="infoForm" class="bubble user" novalidate>
           <!-- אני: תלמיד/הורה -->
           <div class="field">
-            <label> 👨‍🚀 עם מי אנחנו מדברים?</label>
+            <label>עם מי אנחנו מדברים?</label>
             <div class="chips" id="chips_role">
               <button type="button" class="chip" data-value="תלמיד" aria-pressed="false">תלמיד</button>
               <button type="button" class="chip" data-value="הורה" aria-pressed="false">הורה</button>
@@ -122,7 +124,7 @@
 
           <!-- מקצועות מעניינים -->
           <div class="field">
-            <label> 👨‍🚀 באילו מקצועות תרצו עזרה?</label>
+            <label>באילו מקצועות תרצו עזרה?</label>
             <div class="chips" id="chips_subjects">
               <button type="button" class="chip" data-value="מתמטיקה" aria-pressed="false">מתמטיקה</button>
               <button type="button" class="chip" data-value="אנגלית" aria-pressed="false">אנגלית</button>
@@ -135,7 +137,7 @@
 
           <!-- צרכים / מה מחפשים -->
           <div class="field">
-            <label> 👨‍🚀 מה עיקר הצורך?</label>
+            <label>מה עיקר הצורך?</label>
             <div class="chips" id="chips_interests">
               <button type="button" class="chip" data-value="הכנה לבגרויות" aria-pressed="false">📘 הכנה לבגרויות</button>
               <button type="button" class="chip" data-value="שיעורי בית" aria-pressed="false">✍️ שיעורי בית</button>
@@ -164,19 +166,14 @@
     </section>
   </main>
 
-  <!-- קונפיג API -->
-  <script>
-    window.APP_CONFIG = {
-      SHEET_API_URL: 'https://script.google.com/macros/s/AKfycbxRiJ_uMNpIJru-nNClAi787sA07hQSu7TX4cQEAm3_w3-dO2Hmp39ISxh81SqudA/exec',
-      PROJECT: 'Houston'
-    };
-  </script>
+  <!-- קונפיג מרכזי (Webhook + Project) -->
+  <script src="../js/config.js?v=6"></script>
 
   <!-- chat-core רק בשביל Validators/שליחה (אם קיים) -->
-  <script src="../js/chat-core.js?v=3"></script>
+  <script src="../js/chat-core.js?v=5"></script>
 
   <!-- לוגיקת הדף -->
-  <script src="../js/flows/info.js?v=3"></script>
+  <script src="../js/flows/info.js?v=5"></script>
   <script>
     window.addEventListener('DOMContentLoaded', () => window.InfoPage?.init?.());
   </script>

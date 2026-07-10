@@ -1,7 +1,6 @@
 /* /public/branches/js/chat-core.js
    ליבת עזר ל־Front-End: ולידציה + שליחה ל־Google Apps Script.
-   שליחה כ-text/plain (ללא preflight), פענוח תשובה גם אם אינה JSON, ולוג טכני לזיהוי הטאב.
-*/
+   שליחה כ-text/plain (ללא preflight CORS) ופענוח תשובה גם אם אינה JSON תקין. */
 (() => {
   const area    = document.getElementById('area');
   const backBtn = document.getElementById('backBtn');
@@ -19,6 +18,10 @@
   function setStatus(msg){ if (status) status.textContent = msg; }
   function bubble(html, who='bot'){ if (!area) return null; const el=document.createElement('div'); el.className=`bubble ${who}`; el.innerHTML=html; area.appendChild(el); autoscroll(); return el; }
 
+  // בריחת HTML – למניעת הזרקת תגיות דרך קלט משתמש שמוצג ב-innerHTML
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g,
+    (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+
   const Val = {
     nonEmpty: (s) => String(s ?? '').trim().length > 0,
     phoneIL: (s) => /^0\d{1,2}\d{7}$/.test(String(s ?? '').replace(/\D/g,'')),
@@ -27,14 +30,12 @@
   };
 
   function getApi(){
-    const fromCfg = (window.APP_CONFIG||{}).SHEET_API_URL || '';
-    const fromLS  = localStorage.getItem('houston_sheet_api_url') || '';
-    return fromCfg || fromLS || '';
+    return (window.APP_CONFIG || {}).SHEET_API_URL || '';
   }
 
   async function sendLeadToSheet(payload){
     const base = getApi();
-    if (!base) throw new Error('SHEET_API_URL חסר (Webhook לא מוגדר).');
+    if (!base) throw new Error('missing_endpoint');
     const url = base + (base.includes('?') ? '&' : '?') + 'origin=' + encodeURIComponent(location.origin);
 
     const res = await fetch(url, {
@@ -53,14 +54,13 @@
     try { data = rawText ? JSON.parse(rawText) : {}; } catch(e){ /* ignore */ }
 
     if (!res.ok || data?.ok !== true){
-      const msg = data?.error || `HTTP ${res.status} ${res.statusText}` + (rawText ? ` — ${rawText.slice(0,180)}` : '');
-      console.error('[Sheets Error]', { url, status:res.status, rawText, data, payload });
-      throw new Error(msg);
+      // לוג טכני ללא פרטים אישיים (ללא payload)
+      console.error('[Houston] submit failed', { flow: payload?.flow, status: res.status, error: data?.error || rawText.slice(0, 120) });
+      throw new Error(data?.error || ('HTTP ' + res.status));
     }
 
-    if (data.sheet) console.info('[Sheets OK]', { flow: payload.flow, sheet: data.sheet, caseId: data.caseId });
     return data; // { ok:true, caseId, sheet, ... }
   }
 
-  window.Chat = { State, clear, autoscroll, setStatus, bubble, push, goBack, last, Val, sendLeadToSheet };
+  window.Chat = { State, clear, autoscroll, setStatus, bubble, push, goBack, last, Val, esc, sendLeadToSheet };
 })();
